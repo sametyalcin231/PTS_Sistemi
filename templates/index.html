@@ -1,1 +1,66 @@
-
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head>
+<body class="bg-slate-50 min-h-screen">
+    {% if login_page %}
+    <div class="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm">
+            <h1 class="text-3xl font-black text-center mb-6 text-indigo-600">PTS PRO</h1>
+            {% with msgs = get_flashed_messages(with_categories=true) %}
+                {% if msgs %}{% for c, m in msgs %}<div class="p-3 mb-4 rounded-xl text-xs font-bold {% if c == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ m }}</div>{% endfor %}{% endif %}
+            {% endwith %}
+            <form action="{% if auth_mode == 'login' %}/login{% else %}/register{% endif %}" method="POST" class="space-y-4">
+                <input type="text" name="username" placeholder="Kullanıcı" required class="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <button class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg">{% if auth_mode == 'login' %}Giriş{% else %}Kayıt{% endif %}</button>
+            </form>
+            <div class="mt-4 text-center text-xs font-bold text-indigo-500"><a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}">{% if auth_mode == 'login' %}Yeni Kayıt{% else %}Geri Dön{% endif %}</a></div>
+        </div>
+    </div>
+    {% else %}
+    <nav class="bg-white p-4 border-b flex justify-between px-10 items-center">
+        <div class="flex items-center gap-6"><span class="font-black italic text-indigo-600 text-2xl">PTS.PRO</span>
+        {% if current_user.role == 'admin' %}<a href="/admin_panel" class="bg-indigo-600 text-white px-5 py-2 rounded-full text-xs font-bold">ADMİN PANELİ</a>{% endif %}</div>
+        <div class="flex items-center gap-4"><span class="font-bold underline italic">{{ current_user.username }}</span><a href="/logout" class="text-red-500 font-black"><i class="fa-solid fa-power-off"></i></a></div>
+    </nav>
+    <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-4 space-y-6">
+            {% if current_user.role != 'admin' %}
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-indigo-100 text-center">
+                {% if not active_status %}
+                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-6 rounded-2xl font-black shadow-lg shadow-orange-100">DIŞARI ÇIKIYORUM</a>
+                {% else %}
+                <div class="bg-indigo-50 p-4 rounded-2xl mb-4 border border-indigo-200"><p class="text-xs font-bold text-indigo-400 italic">Dışarıdasınız:</p><p class="text-3xl font-black text-indigo-700">{{ out_duration }}</p></div>
+                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-6 rounded-2xl font-black shadow-lg shadow-emerald-100">GİRİŞ YAP / GELDİM</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            <div class="bg-white p-6 rounded-3xl shadow-sm border">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest italic">Şu An Kimler Dışarıda?</h3>
+                <div class="space-y-2">
+                    {% for person in outsiders %}<div class="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100"><span class="font-bold text-red-700 italic">{{ person.username }}</span><span class="text-[10px] bg-red-200 text-red-800 px-2 py-1 rounded-full font-black">DIŞARIDA</span></div>
+                    {% else %}<p class="text-xs text-slate-400 italic">Herkes içeride.</p>{% endfor %}
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border">
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Talep Formu</h3>
+                <form action="/request" method="POST" enctype="multipart/form-data" class="space-y-3">
+                    <select name="type" class="w-full p-2 border rounded-xl font-bold bg-slate-50"><option value="İzin">İzin</option><option value="Avans">Avans</option><option value="Rapor">Sağlık Raporu</option></select>
+                    <input type="date" name="date" class="w-full p-2 border rounded-xl text-slate-500 font-bold">
+                    <input type="text" name="detail" placeholder="Açıklama" required class="w-full p-2 border rounded-xl outline-none">
+                    <input type="file" name="file" class="text-[10px]">
+                    <button class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">GÖNDER</button>
+                </form>
+            </div>
+        </div>
+        <div class="lg:col-span-8 bg-white rounded-3xl shadow-sm border overflow-hidden">
+            <div class="p-4 bg-slate-50 border-b font-black text-slate-600 uppercase text-[10px]">HAREKETLERİM</div>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase"><th class="p-4">Zaman</th><th class="p-4">Tür</th><th class="p-4">Detay</th><th class="p-4">Dosya</th></thead>
+                <tbody>{% for log in logs %}<tr class="border-b"><td class="p-4 text-slate-400">{{ log.created_at.strftime('%H:%M') }}</td><td class="p-4 font-black italic">{{ log.type }}</td><td class="p-4 text-slate-600">{{ log.detail }}</td><td class="p-4">{% if log.file_path %}<a href="/uploads/{{ log.file_path }}" target="_blank" class="text-indigo-600"><i class="fa-solid fa-paperclip"></i></a>{% else %}-{% endif %}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>
