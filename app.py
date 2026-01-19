@@ -148,14 +148,15 @@ def logout():
     return redirect(url_for('login'))
 
 # --- UYGULAMA BAŞLATMA VE TABLO OLUŞTURMA ---
+with app.app_context():
+    db.create_all()  # Gunicorn başlarken tabloların varlığını kontrol eder
+    if not User.query.filter_by(username='admin').first():
+        admin = User(username='admin', password='admin', role='admin')
+        db.session.add(admin)
+        db.session.commit()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Veritabanı tablolarını oluşturur
-        # Varsayılan Admin Hesabı (Eğer yoksa)
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', password='admin', role='admin')
-            db.session.add(admin)
-            db.session.commit()
-    # Port ayarı Render için önemlidir
+    # Bu kısım sadece bilgisayarında (lokal) çalışırken devreye girer
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
