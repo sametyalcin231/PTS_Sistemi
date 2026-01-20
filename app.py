@@ -13,15 +13,18 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v5_final')
 
 # --- ŞİFRE SIFIRLAMA VE MAİL AYARLARI ---
-s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False, # SSL'i False, TLS'i True yap
     MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
     MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
-    MAIL_DEFAULT_SENDER=os.environ.get('MAIL_USERNAME')
+    MAIL_DEFAULT_SENDER=os.environ.get('MAIL_USERNAME'),
+    MAIL_ASCII_ATTACHMENTS=False
 )
+# Bağlantı süresini kontrol etmek için bu satırı ekle (isteğe bağlı)
+app.config['MAIL_TIMEOUT'] = 10 
 mail = Mail(app)
 
 # --- DOSYA YÜKLEME AYARLARI ---
@@ -289,3 +292,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+
