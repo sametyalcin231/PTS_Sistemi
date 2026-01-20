@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PTS PRO | Sekmeli Portal</title>
+    <title>PTS PRO | Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn.active { border-bottom: 3px solid #4f46e5; color: #4f46e5; font-weight: 900; }
-        /* Flash mesajlarının yavaşça kaybolması için */
         .flash-msg { transition: opacity 0.5s ease-out; }
     </style>
 </head>
@@ -22,7 +21,10 @@
             <div class="text-center mb-6">
                 <h1 class="text-4xl font-black text-indigo-600 tracking-tighter italic">PTS PRO</h1>
                 <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">
-                    {% if auth_mode == 'login' %}HOŞ GELDİNİZ{% else %}YENİ ÜYELİK{% endif %}
+                    {% if auth_mode == 'login' %}HOŞ GELDİNİZ
+                    {% elif auth_mode == 'register' %}YENİ ÜYELİK
+                    {% elif auth_mode == 'forgot' %}ŞİFRE SIFIRLAMA
+                    {% elif auth_mode == 'reset' %}YENİ ŞİFRE BELİRLE{% endif %}
                 </p>
             </div>
             
@@ -34,20 +36,42 @@
                 {% endfor %}{% endif %}
             {% endwith %}
 
-            <form action="{% if auth_mode == 'login' %}/login{% else %}/register{% endif %}" method="POST" class="space-y-3">
-                {% if auth_mode == 'register' %}
+            {% if auth_mode == 'login' %}
+            <form action="/login" method="POST" class="space-y-3">
+                <input type="text" name="username" placeholder="Kullanıcı Adı" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl">GİRİŞ YAP</button>
+                <a href="/forgot_password" class="text-[10px] text-slate-400 mt-2 block text-center hover:text-indigo-600 transition-colors">Şifremi Unuttum?</a>
+            </form>
+            
+            {% elif auth_mode == 'register' %}
+            <form action="/register" method="POST" class="space-y-3">
                 <input type="text" name="full_name" placeholder="Ad Soyad" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
                 <input type="text" name="tc_no" placeholder="TC No" maxlength="11" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
                 <input type="email" name="email" placeholder="E-Posta" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
-                {% endif %}
                 <input type="text" name="username" placeholder="Kullanıcı Adı" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
                 <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
-                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl">
-                    {% if auth_mode == 'login' %}GİRİŞ YAP{% else %}KAYDOL{% endif %}
-                </button>
+                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl">KAYDOL</button>
             </form>
-            <div class="mt-6 flex justify-between text-[10px] font-black uppercase text-slate-400">
-                <a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}">{% if auth_mode == 'login' %}Yeni Kayıt{% else %}Geri Dön{% endif %}</a>
+
+            {% elif auth_mode == 'forgot' %}
+            <form action="/forgot_password" method="POST" class="space-y-3">
+                <p class="text-[10px] text-slate-500 text-center mb-4">Sıfırlama linki için kayıtlı e-posta adresinizi girin.</p>
+                <input type="email" name="email" placeholder="E-Posta Adresiniz" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl">TALEP GÖNDER</button>
+            </form>
+
+            {% elif auth_mode == 'reset' %}
+            <form action="/reset_password/{{ token }}" method="POST" class="space-y-3">
+                <input type="password" name="password" placeholder="Yeni Şifre" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl">ŞİFREYİ GÜNCELLE</button>
+            </form>
+            {% endif %}
+
+            <div class="mt-6 flex justify-center text-[10px] font-black uppercase text-slate-400">
+                <a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}" class="hover:text-indigo-600">
+                    {% if auth_mode == 'login' %}Hesabınız yok mu? Kaydolun{% else %}Giriş Ekranına Dön{% endif %}
+                </a>
             </div>
         </div>
     </div>
@@ -64,7 +88,7 @@
     <div class="max-w-md mx-auto mt-4 px-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}{% for category, message in messages %}
-            <div id="flash-{{ loop.index }}" class="flash-msg p-4 rounded-2xl mb-4 text-[10px] font-black uppercase text-center shadow-lg border-2 animate-bounce
+            <div class="flash-msg p-4 rounded-2xl mb-4 text-[10px] font-black uppercase text-center shadow-lg border-2 animate-bounce
                 {% if category == 'success' %}bg-emerald-500 text-white border-emerald-400
                 {% elif category == 'warning' %}bg-orange-500 text-white border-orange-400
                 {% else %}bg-rose-500 text-white border-rose-400{% endif %}">
@@ -82,7 +106,6 @@
     </div>
 
     <main class="max-w-md mx-auto p-4 space-y-6 pb-24">
-        
         <div id="main" class="tab-content active space-y-6">
             <div class="bg-white p-4 rounded-3xl shadow-sm border">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-3 italic">Şu An Dışarıda Olanlar</h3>
@@ -102,13 +125,13 @@
 
             <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-indigo-50 text-center">
                 {% if not active_status %}
-                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-orange-200 uppercase tracking-tighter">DIŞARI ÇIKIYORUM</a>
+                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-orange-200 uppercase tracking-tighter transition-transform active:scale-95">DIŞARI ÇIKIYORUM</a>
                 {% else %}
                 <div class="mb-4">
                     <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Dışarıda Geçen Süre</p>
                     <p class="text-3xl font-black text-indigo-600 tabular-nums" id="liveCounter">00:00:00</p>
                 </div>
-                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-emerald-200 uppercase tracking-tighter">GELDİM / GİRİŞ</a>
+                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-emerald-200 uppercase tracking-tighter transition-transform active:scale-95">GELDİM / GİRİŞ</a>
                 <script>
                     function updateCounter() {
                         const start = new Date("{{ active_status.created_at.strftime('%Y-%m-%dT%H:%M:%S') }}");
@@ -132,7 +155,7 @@
                         <p class="text-[10px] font-black text-slate-400 uppercase">Resim (PNG/JPG) Seçin</p>
                         <input type="file" name="report_file" accept="image/*" class="hidden" required onchange="this.parentElement.querySelector('p').innerText = this.files[0].name">
                     </label>
-                    <input type="text" name="report_detail" placeholder="Rapor Konusu (Örn: Sağlık)" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                    <input type="text" name="report_detail" placeholder="Konu (Örn: Sağlık, Saha)" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
                     <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-lg">YÜKLEMEYİ TAMAMLA</button>
                 </form>
             </div>
@@ -154,7 +177,7 @@
             <div class="space-y-3">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase italic px-4">Taleplerimin Durumu</h3>
                 {% for r in requests %}
-                <div class="bg-white p-4 rounded-3xl shadow-sm border flex justify-between items-center transition-all">
+                <div class="bg-white p-4 rounded-3xl shadow-sm border flex justify-between items-center">
                     <div class="flex-1">
                         <p class="text-[10px] font-black uppercase text-indigo-600">{{ r.req_type }}</p>
                         <p class="text-[11px] font-bold text-slate-500 truncate pr-4">{{ r.content }}</p>
@@ -184,8 +207,8 @@
                     {% endfor %}
                 </div>
                 <form action="/send_msg" method="POST" class="p-4 bg-white border-t flex gap-2">
-                    <input type="text" name="content" placeholder="Mesaj..." class="flex-1 p-4 border rounded-2xl text-xs font-bold outline-none bg-slate-50 focus:bg-white focus:border-indigo-300 transition-all" required>
-                    <button class="bg-indigo-600 text-white px-6 rounded-2xl shadow-lg hover:bg-indigo-700 transition-colors"><i class="fa-solid fa-paper-plane"></i></button>
+                    <input type="text" name="content" placeholder="Mesajınızı yazın..." class="flex-1 p-4 border rounded-2xl text-xs font-bold outline-none bg-slate-50 focus:bg-white focus:border-indigo-300 transition-all" required>
+                    <button class="bg-indigo-600 text-white px-6 rounded-2xl shadow-lg hover:bg-indigo-700"><i class="fa-solid fa-paper-plane"></i></button>
                 </form>
             </div>
         </div>
@@ -193,13 +216,10 @@
     {% endif %}
 
     <script>
-        // Sekme Değiştirme ve URL Hafızası
         function openTab(tabId) {
-            // Aktif sınıfları temizle
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             
-            // Seçilen sekmeyi göster
             const targetContent = document.getElementById(tabId);
             const targetBtn = document.getElementById('btn-' + tabId);
             
@@ -208,12 +228,10 @@
                 targetBtn.classList.add('active');
             }
 
-            // URL'e anchor ekle (hafıza için)
             if (!window.location.hash || window.location.hash !== '#' + tabId) {
                 history.replaceState(null, null, '#' + tabId);
             }
 
-            // Sohbet kutusunu aşağı kaydır
             if(tabId === 'chat') {
                 const cb = document.getElementById('chatBox');
                 if(cb) cb.scrollTop = cb.scrollHeight;
@@ -221,15 +239,13 @@
         }
 
         window.onload = function() {
-            // 1. Sekme Hafızası Kontrolü (URL'deki # anchor'a bakar)
             const hash = window.location.hash.replace('#', '');
-            if (hash === 'requests' || hash === 'chat' || hash === 'main') {
+            if (['requests', 'chat', 'main'].includes(hash)) {
                 openTab(hash);
             } else {
-                openTab('main'); // Varsayılan
+                openTab('main');
             }
 
-            // 2. Flash Mesajları 4 Saniye Sonra Gizle
             setTimeout(() => {
                 document.querySelectorAll('.flash-msg').forEach(el => {
                     el.style.opacity = '0';
