@@ -3,183 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PTS PRO | Final Versiyon</title>
+    <title>PTS PRO | Sekmeli Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .chat-container { height: 250px; overflow-y: auto; scroll-behavior: smooth; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen pb-24">
 
     {% if login_page %}
     <div class="min-h-screen flex items-center justify-center bg-indigo-950 px-6">
-        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative">
-            <div class="text-center mb-6">
-                <h1 class="text-4xl font-black text-indigo-600 tracking-tighter italic">PTS PRO</h1>
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">GÜVENLİ PERSONEL PORTALI</p>
-            </div>
-
-            {% with msgs = get_flashed_messages(with_categories=true) %}
-                {% if msgs %}{% for c, m in msgs %}
-                <div class="p-4 mb-4 rounded-2xl text-xs font-bold {% if c == 'success' %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-700{% endif %}">
-                    {{ m }}
-                </div>
-                {% endfor %}{% endif %}
-            {% endwith %}
-
-            <form action="{% if auth_mode == 'login' %}/login{% else %}/register{% endif %}" method="POST" class="space-y-3">
-                {% if auth_mode == 'register' %}
-                <input type="text" name="full_name" placeholder="Ad Soyad" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm outline-none">
-                <input type="text" name="tc_no" placeholder="TC No" maxlength="11" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm outline-none">
-                <input type="email" name="email" placeholder="E-Posta (Şifre sıfırlama için)" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm outline-none">
-                {% endif %}
-                <input type="text" name="username" placeholder="Kullanıcı Adı" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm outline-none">
-                <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-sm outline-none">
-                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl shadow-indigo-200">
-                    {% if auth_mode == 'login' %}GİRİŞ YAP{% else %}KAYDOL{% endif %}
-                </button>
-            </form>
-
-            <div class="mt-6 flex justify-between text-[10px] font-black uppercase text-slate-400">
-                <a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}">{% if auth_mode == 'login' %}Yeni Kayıt{% else %}Geri Dön{% endif %}</a>
-                <button onclick="document.getElementById('mail-modal').classList.remove('hidden')">Şifremi Unuttum?</button>
-            </div>
         </div>
-
-        <div id="mail-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm text-center">
-                <h3 class="text-xl font-black mb-4 italic">Şifre Kurtarma</h3>
-                <form action="/forgot_password" method="POST" class="space-y-4">
-                    <input type="email" name="email" placeholder="Kayıtlı Mail Adresiniz" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none">
-                    <button class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black">ŞİFREMİ MAİL AT</button>
-                    <button type="button" onclick="document.getElementById('mail-modal').classList.add('hidden')" class="text-xs font-black text-slate-400 uppercase mt-2">Kapat</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     {% else %}
-    <nav class="glass sticky top-0 z-40 border-b p-4 px-6 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-3">
-            <span class="font-black text-2xl tracking-tighter text-indigo-600 italic underline">PTS.PRO</span>
-            {% if current_user.role == 'admin' %}
-            <a href="/admin_panel" class="bg-black text-white px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest">ADMİN</a>
-            {% endif %}
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="text-right">
-                <p class="text-[9px] font-black text-slate-400 uppercase">{{ current_user.full_name }}</p>
-                <p class="text-[10px] font-bold text-slate-900">{{ current_user.tc_no }}</p>
-            </div>
-            <a href="/logout" class="text-rose-500 text-xl ml-2"><i class="fa-solid fa-power-off"></i></a>
+    
+    <nav class="bg-white border-b sticky top-0 z-50 p-4 px-6 flex justify-between items-center shadow-sm">
+        <span class="font-black text-xl text-indigo-600 italic">PTS.PRO</span>
+        <div class="flex items-center gap-4">
+            {% if current_user.role == 'admin' %}<a href="/admin_panel" class="text-[10px] bg-black text-white px-3 py-1 rounded-full font-bold">ADMİN</a>{% endif %}
+            <a href="/logout" class="text-rose-500"><i class="fa-solid fa-power-off"></i></a>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6 pb-20">
-        
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border border-white text-center">
-            {% if not active_status %}
-            <a href="/terminal/out" class="flex flex-col items-center justify-center w-full bg-orange-500 text-white py-8 rounded-[2rem] font-black shadow-lg">
-                <i class="fa-solid fa-door-open text-3xl mb-1"></i>
-                <span class="text-lg uppercase italic">Dışarı Çıkıyorum</span>
-            </a>
-            {% else %}
-            <div class="bg-indigo-50 p-4 rounded-2xl mb-4 border border-indigo-100">
-                <p class="text-[10px] font-black text-indigo-400 uppercase italic">DIŞARIDASINIZ</p>
-            </div>
-            <a href="/terminal/in" class="flex flex-col items-center justify-center w-full bg-emerald-500 text-white py-8 rounded-[2rem] font-black shadow-lg">
-                <i class="fa-solid fa-house-user text-3xl mb-1"></i>
-                <span class="text-lg uppercase italic">Giriş Yaptım / Geldim</span>
-            </a>
-            {% endif %}
-            <button id="nfcButton" class="mt-4 w-full flex items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] tracking-widest uppercase">
-                <i class="fa-solid fa-rss animate-pulse"></i> NFC İLE KART OKUT
-            </button>
-        </div>
-
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border border-white">
-            <h3 class="font-black text-indigo-600 mb-4 tracking-widest uppercase italic text-xs"><i class="fa-solid fa-hand-holding-dollar mr-2"></i> Talep Merkezi</h3>
-            <form action="/submit_request" method="POST" class="space-y-3">
-                <div class="grid grid-cols-2 gap-2">
-                    <select name="req_type" class="p-3 border rounded-xl bg-slate-50 font-bold text-xs outline-none">
-                        <option value="İzin">İzin İste</option>
-                        <option value="Avans">Avans Yaz</option>
-                    </select>
-                    <input type="text" name="amount" placeholder="Miktar (Avans ise)" class="p-3 border rounded-xl bg-slate-50 font-bold text-xs outline-none">
+    <div class="max-w-md mx-auto mt-4 px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="p-4 rounded-2xl mb-4 text-xs font-black uppercase text-center shadow-lg {% if category == 'success' %}bg-emerald-500 text-white{% else %}bg-orange-500 text-white{% endif %} animate-bounce">
+                    <i class="fa-solid fa-circle-check mr-2"></i> {{ message }}
                 </div>
-                <textarea name="content" placeholder="Açıklama veya İzin Tarihleri..." class="w-full p-3 border rounded-xl bg-slate-50 font-bold text-xs outline-none h-20"></textarea>
-                <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-black text-xs uppercase tracking-tighter">TALEBİ YÖNETİME GÖNDER</button>
-            </form>
+            {% endfor %}{% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="max-w-md mx-auto bg-white border-b flex justify-around sticky top-[60px] z-40">
+        <button onclick="openTab('main')" id="btn-main" class="tab-btn active flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Panel</button>
+        <button onclick="openTab('requests')" id="btn-requests" class="tab-btn flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Taleplerim</button>
+        <button onclick="openTab('chat')" id="btn-chat" class="tab-btn flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Sohbet</button>
+    </div>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+
+        <div id="main" class="tab-content active space-y-6">
+            <div class="bg-white p-4 rounded-3xl shadow-sm border">
+                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-3 italic">Şu An Dışarıda Olanlar</h3>
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                    {% if outsiders %}
+                        {% for o in outsiders %}
+                        <div class="bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-full flex items-center gap-2 whitespace-nowrap">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                            <span class="text-[10px] font-black text-indigo-700 uppercase">{{ o.full_name }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-[10px] font-bold text-slate-300 italic">Herkes ofiste.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-indigo-50 text-center">
+                {% if not active_status %}
+                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-orange-200">DIŞARI ÇIKIYORUM</a>
+                {% else %}
+                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-emerald-200">GİRİŞ YAPTIM</a>
+                {% endif %}
+            </div>
+
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border">
+                <h3 class="text-[10px] font-black text-indigo-600 uppercase mb-4 italic">Rapor / Dosya Yükle</h3>
+                <form action="/upload_report" method="POST" enctype="multipart/form-data" class="space-y-3">
+                    <label class="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center cursor-pointer hover:bg-slate-50">
+                        <i class="fa-solid fa-camera text-2xl text-slate-300 mb-1"></i>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Resim veya PDF Seç</p>
+                        <input type="file" name="report_file" accept="image/*,.pdf" class="hidden">
+                    </label>
+                    <input type="text" name="report_detail" placeholder="Rapor Açıklaması" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
+                    <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs">SİSTEME GÖNDER</button>
+                </form>
+            </div>
         </div>
 
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border border-white">
-            <h3 class="font-black text-slate-400 mb-4 tracking-widest uppercase italic text-xs"><i class="fa-solid fa-file-medical mr-2"></i> Rapor Bildirimi</h3>
-            <form action="/upload_report" method="POST" class="space-y-3">
-                <input type="text" name="report_detail" placeholder="Rapor Konusu (Örn: Hastalık Raporu)" required class="w-full p-3 border rounded-xl bg-slate-50 font-bold text-xs outline-none">
-                <button class="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-xs uppercase tracking-tighter">RAPORU SİSTEME İŞLE</button>
-            </form>
-        </div>
+        <div id="requests" class="tab-content space-y-6">
+            <div class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-200">
+                <h3 class="text-[10px] font-black uppercase mb-4 opacity-70">İzin veya Avans İste</h3>
+                <form action="/submit_request" method="POST" class="space-y-3 text-slate-900">
+                    <select name="req_type" class="w-full p-4 rounded-2xl font-bold text-xs outline-none">
+                        <option value="İzin">İzin Talebi</option>
+                        <option value="Avans">Avans Talebi</option>
+                    </select>
+                    <input type="text" name="amount" placeholder="Miktar (Avans ise)" class="w-full p-4 rounded-2xl font-bold text-xs outline-none">
+                    <textarea name="content" placeholder="Tarih veya Açıklama" class="w-full p-4 rounded-2xl font-bold text-xs outline-none h-20"></textarea>
+                    <button class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black uppercase text-xs">TALEBİ İLET</button>
+                </form>
+            </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
-            <div class="p-4 bg-slate-900 text-white font-black text-[10px] tracking-widest uppercase italic">Personel Sohbeti</div>
-            <div id="chatBox" class="chat-container p-6 space-y-4 bg-slate-50">
-                {% for m in messages %}
-                <div class="flex flex-col {% if m.sender == current_user.username %}items-end{% endif %}">
-                    <span class="text-[8px] font-black text-slate-400 uppercase mb-1">{{ m.sender }}</span>
-                    <div class="inline-block p-3 rounded-2xl text-xs font-bold {% if m.sender == current_user.username %}bg-indigo-600 text-white{% else %}bg-white border text-slate-700{% endif %}">
-                        {{ m.content }}
+            <div class="space-y-3">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase italic px-4">Taleplerimin Durumu</h3>
+                {% for r in requests %}
+                <div class="bg-white p-4 rounded-3xl shadow-sm border flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-black uppercase text-indigo-600">{{ r.req_type }}</p>
+                        <p class="text-[11px] font-bold text-slate-500">{{ r.content[:30] }}...</p>
                     </div>
+                    <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase {% if r.status == 'Beklemede' %}bg-orange-100 text-orange-600{% else %}bg-emerald-100 text-emerald-600{% endif %}">{{ r.status }}</span>
                 </div>
                 {% endfor %}
             </div>
-            <form action="/send_msg" method="POST" class="p-3 border-t bg-white flex gap-2">
-                <input type="text" name="content" placeholder="Mesaj..." class="flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 outline-none">
-                <button class="bg-indigo-600 text-white px-5 rounded-xl"><i class="fa-solid fa-paper-plane"></i></button>
-            </form>
         </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden">
-            <div class="p-4 border-b font-black text-[10px] text-slate-400 uppercase italic tracking-widest">Son Hareketlerim</div>
-            <table class="w-full text-left text-[10px]">
-                <thead class="bg-slate-50 font-black text-slate-400 uppercase">
-                    <tr><th class="p-4">Zaman</th><th class="p-4">Tür</th><th class="p-4">Durum</th></tr>
-                </thead>
-                <tbody class="font-bold">
-                    {% for log in logs %}
-                    <tr class="border-b">
-                        <td class="p-4 text-slate-400">{{ log.created_at.strftime('%H:%M') }}</td>
-                        <td class="p-4 text-indigo-600">{{ log.type }}</td>
-                        <td class="p-4"><span class="bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase text-[8px]">{{ log.status }}</span></td>
-                    </tr>
+        <div id="chat" class="tab-content">
+            <div class="bg-white rounded-[2.5rem] shadow-xl border overflow-hidden flex flex-col h-[500px]">
+                <div id="chatBox" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+                    {% for m in messages %}
+                    <div class="flex flex-col {% if m.sender == current_user.username %}items-end{% endif %}">
+                        <span class="text-[8px] font-black text-slate-400 uppercase mb-1">{{ m.sender }}</span>
+                        <div class="p-3 rounded-2xl text-xs font-bold {% if m.sender == current_user.username %}bg-indigo-600 text-white{% else %}bg-white border text-slate-700 shadow-sm{% endif %}">
+                            {{ m.content }}
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+                <form action="/send_msg" method="POST" class="p-4 bg-white border-t flex gap-2">
+                    <input type="text" name="content" placeholder="Mesaj yaz..." class="flex-1 p-4 border rounded-2xl text-xs font-bold outline-none bg-slate-50">
+                    <button class="bg-indigo-600 text-white px-6 rounded-2xl"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+            </div>
         </div>
+
     </main>
-    {% endif %}
 
     <script>
-        // NFC Scripti
-        const nfcBtn = document.getElementById('nfcButton');
-        if(nfcBtn) {
-            nfcBtn.addEventListener('click', async () => {
-                if ('NDEFReader' in window) {
-                    try {
-                        const ndef = new NDEFReader();
-                        await ndef.scan();
-                        alert("Okuyucu aktif! Kartınızı dokundurun.");
-                        ndef.onreading = e => { window.location.href = "/terminal/out"; };
-                    } catch (err) { alert("NFC Hatası: " + err); }
-                } else { alert("Bu cihaz NFC desteklemiyor."); }
-            });
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
         }
-        // Chat Scroll
         const cb = document.getElementById('chatBox');
         if(cb) cb.scrollTop = cb.scrollHeight;
     </script>
+    {% endif %}
 </body>
 </html>
