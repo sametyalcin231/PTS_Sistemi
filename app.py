@@ -18,15 +18,15 @@ s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 # --- MAİL AYARLARI (Bağlantı Sorunları İçin Optimize Edildi) ---
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False,
+    MAIL_PORT=465,
+    MAIL_USE_TLS=False,
+    MAIL_USE_SSL=True,
     MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
     MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
     MAIL_DEFAULT_SENDER=os.environ.get('MAIL_USERNAME'),
     MAIL_ASCII_ATTACHMENTS=False
 )
-app.config['MAIL_TIMEOUT'] = 10 
+app.config['MAIL_TIMEOUT'] = 30 
 mail = Mail(app)
 
 # --- DOSYA YÜKLEME AYARLARI ---
@@ -288,3 +288,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+
