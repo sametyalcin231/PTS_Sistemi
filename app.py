@@ -12,18 +12,20 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v5_final')
 
-# --- ŞİFRE SIFIRLAMA VE MAİL AYARLARI ---
+# --- ŞİFRE SIFIRLAMA NESNESİ (Hata Alınan Kısım Düzeltildi) ---
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# --- MAİL AYARLARI (Bağlantı Sorunları İçin Optimize Edildi) ---
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False, # SSL'i False, TLS'i True yap
+    MAIL_USE_SSL=False,
     MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
     MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
     MAIL_DEFAULT_SENDER=os.environ.get('MAIL_USERNAME'),
     MAIL_ASCII_ATTACHMENTS=False
 )
-# Bağlantı süresini kontrol etmek için bu satırı ekle (isteğe bağlı)
 app.config['MAIL_TIMEOUT'] = 10 
 mail = Mail(app)
 
@@ -37,15 +39,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- VERİTABANI AYARLARI (KRİTİK DÜZELTME) ---
+# --- VERİTABANI AYARLARI ---
 uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_final_v5.db')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Render PostgreSQL SSL ve Bağlantı Kopma Hataları İçin Ayarlar
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -121,20 +121,21 @@ def login():
         flash('Kullanıcı adı veya şifre hatalı!', 'danger')
     return render_template('index.html', login_page=True, auth_mode='login')
 
-# --- ŞİFRE SIFIRLAMA SİSTEMİ ---
-
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
         user = User.query.filter_by(email=email).first()
         if user:
-            token = s.dumps(email, salt='reset-password')
-            link = url_for('reset_password', token=token, _external=True)
-            msg = MailMessage('PTS PRO | Şifre Sıfırlama Talebi', recipients=[email])
-            msg.body = f'Şifrenizi sıfırlamak için şu bağlantıya tıklayın: {link}'
-            mail.send(msg)
-            flash('Sıfırlama bağlantısı e-postanıza gönderildi!', 'success')
+            try:
+                token = s.dumps(email, salt='reset-password')
+                link = url_for('reset_password', token=token, _external=True)
+                msg = MailMessage('PTS PRO | Şifre Sıfırlama Talebi', recipients=[email])
+                msg.body = f'Şifrenizi sıfırlamak için şu bağlantıya tıklayın: {link}'
+                mail.send(msg)
+                flash('Sıfırlama bağlantısı e-postanıza gönderildi!', 'success')
+            except Exception as e:
+                flash('Mail gönderilirken hata oluştu. Ayarları kontrol edin.', 'danger')
         else:
             flash('Bu e-posta adresi sistemde kayıtlı değil.', 'danger')
     return render_template('index.html', login_page=True, auth_mode='forgot')
@@ -155,8 +156,6 @@ def reset_password(token):
             flash('Şifreniz güncellendi! Giriş yapabilirsiniz.', 'success')
             return redirect(url_for('login'))
     return render_template('index.html', login_page=True, auth_mode='reset', token=token)
-
-# --- DİĞER FONKSİYONLAR ---
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -206,7 +205,6 @@ def upload_report():
     if file and allowed_file(file.filename):
         filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M')}_{file.filename}")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        # Raporlar ilk yüklendiğinde 'Beklemede' durumunda olur
         db.session.add(Activity(username=current_user.username, type='Rapor', detail=request.form.get('report_detail'), file_path=filename, status='Beklemede'))
         db.session.commit()
         flash('Rapor/Belge başarıyla yüklendi!', 'success')
@@ -248,7 +246,6 @@ def set_role(uid, role):
 @login_required
 def admin_action(target, id, status):
     if current_user.role != 'admin': return redirect(url_for('index'))
-    # Hem talepleri hem raporları onaylamaya yarayan ortak fonksiyon
     item = Request.query.get(id) if target == 'request' else Activity.query.get(id)
     if item: 
         item.status = status
@@ -283,7 +280,6 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- BAŞLANGIÇ ---
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
@@ -292,4 +288,3 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-
