@@ -7,7 +7,7 @@ import os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v4_final')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v5_final')
 
 # --- DOSYA YÜKLEME AYARLARI ---
 UPLOAD_FOLDER = 'static/uploads'
@@ -19,13 +19,13 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- VERİTABANI BAĞLANTISI ---
-uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_final_v4.db')
+uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_final_v5.db')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- MAİL AYARLARI (RENDER ENVIRONMENT VARIABLES ÜZERİNDEN) ---
+# --- MAİL AYARLARI (RENDER ENVIRONMENT ÜZERİNDEN) ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -38,7 +38,7 @@ mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# --- VERİ MODELLERİ ---
+# --- MODELLER ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -76,41 +76,33 @@ class Message(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- ANA SAYFA VE SEKMELER ---
+# --- ANA SAYFA ---
 @app.route('/')
 @login_required
 def index():
-    # Aktif Dışarıdakiler
     outsiders = db.session.query(User.full_name).join(Activity, User.username == Activity.username).filter(Activity.status == 'Aktif', Activity.type == 'Terminal').all()
-    # Personelin Kendi Talepleri
     my_requests = Request.query.filter_by(username=current_user.username).order_by(Request.created_at.desc()).all()
-    # Sohbet Mesajları
     msgs = Message.query.order_by(Message.created_at.desc()).limit(20).all()
-    # Aktif Terminal Durumu
     active_status = Activity.query.filter_by(username=current_user.username, status='Aktif', type='Terminal').first()
-    
     return render_template('index.html', outsiders=outsiders, requests=my_requests, messages=msgs, active_status=active_status)
 
-# --- KAYIT VE GİRİŞ ---
+# --- AUTH (GİRİŞ/KAYIT) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form.get('username'), password=request.form.get('password')).first()
-        if user:
-            login_user(user)
-            return redirect(url_for('index'))
-        flash('Kullanıcı adı veya şifre hatalı!', 'danger')
+        if user: login_user(user); return redirect(url_for('index'))
+        flash('Hatalı giriş!', 'danger')
     return render_template('index.html', login_page=True, auth_mode='login')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        new_user = User(username=request.form.get('username'), password=request.form.get('password'),
-                        full_name=request.form.get('full_name'), tc_no=request.form.get('tc_no'), email=request.form.get('email'))
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Kayıt başarılı! Şimdi giriş yapabilirsiniz.', 'success')
-        return redirect(url_for('login'))
+        u = request.form.get('username')
+        if User.query.filter_by(username=u).first(): flash('Bu kullanıcı adı alınmış!', 'danger'); return redirect(url_for('register'))
+        new_user = User(username=u, password=request.form.get('password'), full_name=request.form.get('full_name'), tc_no=request.form.get('tc_no'), email=request.form.get('email'))
+        db.session.add(new_user); db.session.commit()
+        flash('Kayıt başarılı! Giriş yapabilirsiniz.', 'success'); return redirect(url_for('login'))
     return render_template('index.html', login_page=True, auth_mode='register')
 
 @app.route('/forgot_password', methods=['POST'])
@@ -120,78 +112,76 @@ def forgot_password():
     if user:
         try:
             msg = MailMessage("PTS PRO Şifre Hatırlatma", recipients=[email])
-            msg.body = f"Sayın {user.full_name}, PTS sistemine giriş şifreniz: {user.password}"
-            mail.send(msg)
-            flash('Şifreniz mail adresinize gönderildi.', 'success')
-        except:
-            flash('Mail gönderilirken hata oluştu.', 'danger')
-    else:
-        flash('Bu mail adresi sistemde kayıtlı değil.', 'danger')
+            msg.body = f"Şifreniz: {user.password}"; mail.send(msg)
+            flash('Şifre mailinize gönderildi.', 'success')
+        except: flash('Mail hatası!', 'danger')
+    else: flash('E-posta bulunamadı!', 'danger')
     return redirect(url_for('login'))
 
-# --- TALEP VE RAPOR İŞLEMLERİ ---
+# --- İŞLEMLER ---
 @app.route('/submit_request', methods=['POST'])
 @login_required
 def submit_request():
-    db.session.add(Request(username=current_user.username, req_type=request.form.get('req_type'),
-                           content=request.form.get('content'), amount=request.form.get('amount')))
-    db.session.commit()
-    flash('Talebiniz başarıyla gönderildi!', 'success')
-    return redirect(url_for('index'))
+    db.session.add(Request(username=current_user.username, req_type=request.form.get('req_type'), content=request.form.get('content'), amount=request.form.get('amount')))
+    db.session.commit(); flash('Talep iletildi!', 'success'); return redirect(url_for('index'))
 
 @app.route('/upload_report', methods=['POST'])
 @login_required
 def upload_report():
     file = request.files.get('report_file')
-    detail = request.form.get('report_detail')
-    filename = None
     if file and allowed_file(file.filename):
         filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M')}_{file.filename}")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    
-    db.session.add(Activity(username=current_user.username, type='Rapor', detail=detail, file_path=filename, status='Tamamlandı'))
-    db.session.commit()
-    flash('Rapor ve belge başarıyla sisteme yüklendi!', 'success')
+        db.session.add(Activity(username=current_user.username, type='Rapor', detail=request.form.get('report_detail'), file_path=filename, status='Beklemede'))
+        db.session.commit(); flash('Rapor yüklendi!', 'success')
+    else: flash('Dosya seçilmedi veya geçersiz format!', 'danger')
     return redirect(url_for('index'))
 
 @app.route('/terminal/<action>')
 @login_required
 def terminal(action):
     if action == 'out':
-        db.session.add(Activity(username=current_user.username, type='Terminal', detail='Dışarı Çıktı', status='Aktif'))
-        flash('Çıkış işleminiz kaydedildi.', 'warning')
+        db.session.add(Activity(username=current_user.username, type='Terminal', detail='Dışarıda', status='Aktif'))
+        flash('Çıkış yapıldı.', 'warning')
     else:
         act = Activity.query.filter_by(username=current_user.username, status='Aktif', type='Terminal').first()
         if act: act.status = 'Tamamlandı'
-        flash('Giriş işleminiz başarılı. Hoş geldiniz!', 'success')
-    db.session.commit()
-    return redirect(url_for('index'))
+        flash('Giriş yapıldı.', 'success')
+    db.session.commit(); return redirect(url_for('index'))
 
 @app.route('/send_msg', methods=['POST'])
 @login_required
 def send_msg():
     c = request.form.get('content')
-    if c:
-        db.session.add(Message(sender=current_user.username, content=c))
-        db.session.commit()
+    if c: db.session.add(Message(sender=current_user.username, content=c)); db.session.commit()
     return redirect(url_for('index'))
 
+# --- ADMİN PANELİ VE ONAY İŞLEMLERİ (Burayı düzelttik) ---
 @app.route('/admin_panel')
 @login_required
 def admin_panel():
     if current_user.role != 'admin': return redirect(url_for('index'))
-    return render_template('admin.html', users=User.query.all(), logs=Activity.query.all(), reqs=Request.query.all())
+    return render_template('admin.html', users=User.query.all(), logs=Activity.query.all(), reqs=Request.query.filter_by(status='Beklemede').all())
+
+@app.route('/admin/action/<target>/<int:id>/<status>')
+@login_required
+def admin_action(target, id, status):
+    if current_user.role != 'admin': return redirect(url_for('index'))
+    if target == 'request':
+        item = Request.query.get(id)
+        if item: item.status = status
+    elif target == 'activity':
+        item = Activity.query.get(id)
+        if item: item.status = status
+    db.session.commit(); flash(f'İşlem: {status}', 'success'); return redirect(url_for('admin_panel'))
 
 @app.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
+def logout(): logout_user(); return redirect(url_for('login'))
 
-# --- VERİTABANI BAŞLATICI ---
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
-        db.session.add(User(username='admin', password='123', role='admin', full_name='Yönetici', email='admin@pts.com'))
+        db.session.add(User(username='admin', password='123', role='admin', full_name='Admin', email='admin@test.com'))
         db.session.commit()
 
 if __name__ == '__main__':
