@@ -1,26 +1,26 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_mail import Mail, Message as MailMessage # Mail kütüphanesi
+from flask_mail import Mail, Message as MailMessage
 from datetime import datetime
 import os, pandas as pd, io
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pts_ultra_v13'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v2026')
 
-# --- VERİTABANI ---
+# --- VERİTABANI BAĞLANTISI ---
 uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_v13.db')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- MAİL AYARLARI (GMAIL) ---
+# --- MAİL AYARLARI ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'SENIN_MAILIN@gmail.com' # Kendi mailini yaz
-app.config['MAIL_PASSWORD'] = 'SENIN_UYGULAMA_SIFRESI' # Google'dan aldığın uygulama şifresini yaz
+app.config['MAIL_USERNAME'] = 'SENIN_MAILIN@gmail.com' # Burayı değiştir
+app.config['MAIL_PASSWORD'] = 'abcd efgh ijkl mnop' # Google Uygulama Şifreni yaz
 app.config['MAIL_DEFAULT_SENDER'] = 'SENIN_MAILIN@gmail.com'
 
 db = SQLAlchemy(app)
@@ -35,8 +35,14 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100), nullable=False)
     full_name = db.Column(db.String(100))
     tc_no = db.Column(db.String(11))
-    email = db.Column(db.String(100)) # Mail için gerekli
+    email = db.Column(db.String(100))
     role = db.Column(db.String(20), default='personel')
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(50))
+    content = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,43 +56,110 @@ class Activity(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- ŞİFRE SIFIRLAMA MAİL ROTASI ---
+# --- ANA SAYFA ---
+@app.route('/')
+@login_required
+def index():
+    my_logs = Activity.query.filter_by(username=current_user.username).order_by(Activity.created_at.desc()).all()
+    outsiders = Activity.query.filter_by(status='Aktif', type='Terminal').all()
+    messages = Message.query.order_by(Message.created_at.desc()).limit(10).all()
+    active_status = Activity.query.filter_by(username=current_user.username, status='Aktif').first()
+    out_duration = ""
+    if active_status:
+        diff = datetime.now() - active_status.created_at
+        out_duration = f"{int(diff.total_seconds() // 60)} dk"
+    return render_template('index.html', logs=my_logs, outsiders=outsiders, active_status=active_status, out_duration=out_duration, messages=messages)
+
+# --- GİRİŞ / KAYIT ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        u, p = request.form.get('username').strip(), request.form.get('password').strip()
+        user = User.query.filter_by(username=u, password=p).first()
+        if user:
+            login_user(user)
+            return redirect(url_for('index'))
+        flash('Hatalı giriş!', 'danger')
+    return render_template('index.html', login_page=True, auth_mode='login')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        u = request.form.get('username').strip()
+        if not User.query.filter_by(username=u).first():
+            new_user = User(
+                username=u, password=request.form.get('password').strip(),
+                full_name=request.form.get('full_name'), tc_no=request.form.get('tc_no'),
+                email=request.form.get('email')
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Kayıt başarılı! Giriş yapabilirsiniz.', 'success')
+            return redirect(url_for('login'))
+    return render_template('index.html', login_page=True, auth_mode='register')
+
+# --- ŞİFRE SIFIRLAMA (MAİL) ---
 @app.route('/forgot_password', methods=['POST'])
 def forgot_password():
-    email = request.form.get('email')
-    user = User.query.filter_by(email=email).first()
+    target_email = request.form.get('email')
+    user = User.query.filter_by(email=target_email).first()
     if user:
-        msg = MailMessage("PTS PRO - Şifre Hatırlatma", recipients=[email])
-        msg.body = f"Merhaba {user.full_name}, Şifreniz: {user.password} \nLütfen giriş yaptıktan sonra şifrenizi değiştirin."
-        mail.send(msg)
-        flash('Şifreniz mail adresinize gönderildi.', 'success')
+        try:
+            msg = MailMessage("PTS PRO - Şifre Hatırlatma", recipients=[target_email])
+            msg.body = f"Merhaba {user.full_name},\n\nSisteme giriş şifreniz: {user.password}\n\nGüvenliğiniz için giriş yaptıktan sonra şifrenizi değiştirmenizi öneririz."
+            mail.send(msg)
+            flash('Şifreniz e-posta adresinize gönderildi.', 'success')
+        except Exception as e:
+            flash('Mail gönderilemedi. Ayarları kontrol edin.', 'danger')
     else:
-        flash('Bu mail adresi sistemde kayıtlı değil.', 'danger')
+        flash('Bu e-posta adresi kayıtlı değil.', 'danger')
     return redirect(url_for('login'))
 
-# --- ADMİN PANELİ (DÜZELTİLDİ) ---
+# --- TERMİNAL (GİRİŞ-ÇIKIŞ) ---
+@app.route('/terminal/<action>')
+@login_required
+def terminal(action):
+    if action == 'out':
+        db.session.add(Activity(username=current_user.username, type='Terminal', detail='Dışarıda', status='Aktif'))
+    else:
+        act = Activity.query.filter_by(username=current_user.username, status='Aktif').first()
+        if act:
+            act.status = 'Tamamlandı'
+            act.detail = f"Geri Döndü ({int((datetime.now()-act.created_at).total_seconds()//60)} dk)"
+    db.session.commit()
+    return redirect(url_for('index'))
+
+# --- SOHBET ---
+@app.route('/send_msg', methods=['POST'])
+@login_required
+def send_msg():
+    c = request.form.get('content').strip()
+    if c:
+        db.session.add(Message(sender=current_user.username, content=c))
+        db.session.commit()
+    return redirect(url_for('index'))
+
+# --- ADMİN PANELİ ---
 @app.route('/admin_panel')
 @login_required
 def admin_panel():
     if current_user.role != 'admin':
+        flash('Bu sayfa için yetkiniz yok!', 'danger')
         return redirect(url_for('index'))
     users = User.query.all()
     logs = Activity.query.order_by(Activity.created_at.desc()).all()
     return render_template('admin.html', users=users, logs=logs)
 
-# ... Diğer index, login, terminal rotalarını koru ...
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
-@app.route('/')
-@login_required
-def index():
-    my_logs = Activity.query.filter_by(username=current_user.username).order_by(Activity.created_at.desc()).all()
-    active_status = Activity.query.filter_by(username=current_user.username, status='Aktif').first()
-    return render_template('index.html', logs=my_logs, active_status=active_status)
-
+# --- BAŞLATMA ---
 with app.app_context():
     db.create_all()
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', password='123', role='admin', full_name='Sistem Yöneticisi', email='admin@test.com')
+        admin = User(username='admin', password='123', role='admin', full_name='Sistem Yöneticisi', email='admin@test.com', tc_no='00000000000')
         db.session.add(admin)
         db.session.commit()
 
