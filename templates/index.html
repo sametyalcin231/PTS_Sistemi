@@ -2,204 +2,110 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PTS PRO | Personel Takip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .chat-area { height: 250px; scrollbar-width: thin; }
-    </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-10">
-
+<body class="bg-slate-100 min-h-screen">
     {% if login_page %}
-    <div class="min-h-screen flex items-center justify-center bg-indigo-950 px-6">
-        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="inline-block p-4 bg-indigo-100 rounded-2xl mb-4">
-                    <i class="fa-solid fa-fingerprint text-4xl text-indigo-600"></i>
-                </div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tighter">PTS<span class="text-indigo-600">PRO</span></h1>
-                <p class="text-slate-400 text-sm font-bold mt-1">Personel Takip Sistemi</p>
-            </div>
-
+    <div class="min-h-screen flex flex-col items-center justify-center bg-indigo-900 p-6">
+        <div class="bg-white p-8 rounded-[2rem] w-full max-w-md shadow-2xl">
+            <h1 class="text-3xl font-black text-center mb-6 text-indigo-600 tracking-tighter italic">PTS PRO</h1>
+            
             {% with msgs = get_flashed_messages(with_categories=true) %}
-                {% if msgs %}{% for c, m in msgs %}
-                <div class="p-4 mb-4 rounded-2xl text-xs font-black flex items-center gap-2 {% if c == 'success' %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-700{% endif %}">
-                    <i class="fa-solid fa-circle-info"></i> {{ m }}
-                </div>
-                {% endfor %}{% endif %}
+                {% if msgs %}{% for c, m in msgs %}<div class="p-4 mb-4 rounded-xl text-xs font-bold {% if c == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ m }}</div>{% endfor %}{% endif %}
             {% endwith %}
 
             <form action="{% if auth_mode == 'login' %}/login{% else %}/register{% endif %}" method="POST" class="space-y-4">
                 {% if auth_mode == 'register' %}
-                <input type="text" name="full_name" placeholder="Ad Soyad" required class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold">
-                <input type="text" name="tc_no" placeholder="TC Kimlik No" maxlength="11" required class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold">
-                <input type="email" name="email" placeholder="E-Posta" required class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold">
+                <input type="text" name="full_name" placeholder="Ad Soyad" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" name="tc_no" placeholder="TC No" maxlength="11" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" name="recovery_key" placeholder="Kurtarma Anahtarı (Şifre Sıfırlama İçin)" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
                 {% endif %}
-                <input type="text" name="username" placeholder="Kullanıcı Adı" required class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold">
-                <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold">
-                
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95">
-                    {% if auth_mode == 'login' %}SİSTEME GİRİŞ{% else %}HESABI OLUŞTUR{% endif %}
-                </button>
+                <input type="text" name="username" placeholder="Kullanıcı" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" name="password" placeholder="Şifre" required class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <button class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase">{% if auth_mode == 'login' %}GİRİŞ YAP{% else %}KAYDOL{% endif %}</button>
             </form>
 
-            <div class="mt-6 text-center text-sm font-bold text-slate-400">
-                <a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}" class="text-indigo-600 hover:underline">
-                    {% if auth_mode == 'login' %}Henüz hesabınız yok mu? Kaydolun{% else %}Zaten hesabım var, Giriş Yap{% endif %}
-                </a>
+            <div class="mt-4 flex justify-between text-[10px] font-bold text-indigo-500">
+                <a href="{% if auth_mode == 'login' %}/register{% else %}/login{% endif %}">{% if auth_mode == 'login' %}Yeni Kayıt{% else %}Geri Dön{% endif %}</a>
+                <button onclick="document.getElementById('reset-modal').classList.toggle('hidden')">Şifremi Unuttum?</button>
+            </div>
+        </div>
+
+        <div id="reset-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-6">
+            <div class="bg-white p-6 rounded-3xl w-full max-w-sm">
+                <h3 class="font-black mb-4">Şifre Sıfırla</h3>
+                <form action="/reset_password" method="POST" class="space-y-3">
+                    <input type="text" name="username" placeholder="Kullanıcı Adınız" required class="w-full p-3 border rounded-xl bg-slate-50">
+                    <input type="text" name="recovery_key" placeholder="Kurtarma Anahtarınız" required class="w-full p-3 border rounded-xl bg-slate-50">
+                    <input type="password" name="new_password" placeholder="Yeni Şifre" required class="w-full p-3 border rounded-xl bg-slate-50">
+                    <button class="w-full bg-black text-white py-3 rounded-xl font-bold">GÜNCELLE</button>
+                    <button type="button" onclick="document.getElementById('reset-modal').classList.add('hidden')" class="w-full text-xs font-bold text-slate-400 mt-2">KAPAT</button>
+                </form>
             </div>
         </div>
     </div>
 
     {% else %}
-    <nav class="glass sticky top-0 z-50 border-b p-4 px-6 flex justify-between items-center shadow-sm">
+    <nav class="bg-white p-4 border-b flex justify-between items-center px-6 sticky top-0 z-50 shadow-sm">
+        <span class="font-black italic text-indigo-600 text-xl tracking-tighter underline">PTS.PRO</span>
         <div class="flex items-center gap-3">
-            <span class="font-black text-2xl tracking-tighter text-indigo-600 italic underline">PTS.PRO</span>
-            {% if current_user.role == 'admin' %}
-            <a href="/admin_panel" class="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest">ADMİN</a>
-            {% endif %}
-        </div>
-        <div class="flex items-center gap-4">
-            <div class="text-right hidden sm:block">
-                <p class="text-[10px] font-black text-slate-400 uppercase leading-none">{{ current_user.full_name }}</p>
-                <p class="text-xs font-bold text-slate-900">{{ current_user.tc_no }}</p>
-            </div>
-            <a href="/logout" class="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center border border-rose-100">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </a>
+            <span class="text-[10px] font-black text-slate-500">{{ current_user.full_name }}</span>
+            <a href="/logout" class="text-rose-500"><i class="fa-solid fa-power-off"></i></a>
         </div>
     </nav>
 
-    <main class="max-w-md mx-auto sm:max-w-7xl p-4 sm:p-10">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <div class="lg:col-span-4 space-y-6">
-                
-                <div class="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200 border border-white">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="font-black text-slate-900 text-lg italic">Terminal</h2>
-                        <span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span>
-                    </div>
-
-                    {% if current_user.role != 'admin' %}
-                    <div class="space-y-4">
-                        {% if not active_status %}
-                        <a href="/terminal/out" class="flex flex-col items-center justify-center w-full bg-orange-500 text-white py-8 rounded-[1.5rem] font-black shadow-lg shadow-orange-200 transition-transform active:scale-95">
-                            <i class="fa-solid fa-door-open text-3xl mb-2"></i>
-                            DIŞARI ÇIKIYORUM
-                        </a>
-                        {% else %}
-                        <div class="bg-indigo-50 p-6 rounded-2xl mb-4 border-2 border-dashed border-indigo-200 text-center">
-                            <p class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-1">Dışarıda Geçen Süre</p>
-                            <p class="text-4xl font-black text-indigo-700 tracking-tight">{{ out_duration }}</p>
-                        </div>
-                        <a href="/terminal/in" class="flex flex-col items-center justify-center w-full bg-emerald-500 text-white py-8 rounded-[1.5rem] font-black shadow-lg shadow-emerald-200 transition-transform active:scale-95">
-                            <i class="fa-solid fa-house-user text-3xl mb-2"></i>
-                            GİRİŞ YAPTIM / GELDİM
-                        </a>
-                        {% endif %}
-                        
-                        <button onclick="alert('NFC Okuyucu Bekleniyor... Lütfen Kartınızı Telefonun Arkasına Yaklaştırın.')" class="w-full flex items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm">
-                            <i class="fa-solid fa-rss"></i> NFC KART OKUT
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
-                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-                        <span class="font-black text-xs tracking-widest uppercase"><i class="fa-solid fa-comments mr-2"></i> Ekip Sohbeti</span>
-                        <span class="text-[10px] bg-emerald-500 px-2 py-1 rounded text-white font-bold">CANLI</span>
-                    </div>
-                    <div class="chat-area p-4 space-y-3 overflow-y-auto bg-slate-50">
-                        {% for msg in messages %}
-                        <div class="{% if msg.sender == current_user.username %}text-right{% endif %}">
-                            <div class="inline-block max-w-[80%] {% if msg.sender == current_user.username %}bg-indigo-600 text-white{% else %}bg-white text-slate-700{% endif %} p-3 rounded-2xl shadow-sm text-sm">
-                                <p class="text-[9px] font-black uppercase mb-1 opacity-70">{{ msg.sender }}</p>
-                                <p class="font-bold leading-tight">{{ msg.content }}</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <form action="/send_msg" method="POST" class="p-4 border-t flex gap-2">
-                        <input type="text" name="content" placeholder="Mesaj yaz..." class="flex-1 p-3 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button class="bg-indigo-600 text-white px-4 rounded-xl"><i class="fa-solid fa-paper-plane"></i></button>
-                    </form>
-                </div>
+    <div class="p-4 space-y-4 max-w-4xl mx-auto">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-white text-center">
+            {% if not active_status %}
+            <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-8 rounded-3xl font-black shadow-lg text-lg"><i class="fa-solid fa-door-open mr-2"></i>DIŞARI ÇIKIYORUM</a>
+            {% else %}
+            <div class="bg-indigo-50 p-4 rounded-2xl mb-4 border border-indigo-100">
+                <p class="text-[10px] font-black text-indigo-400">DIŞARIDASINIZ</p>
+                <p class="text-3xl font-black text-indigo-700">{{ out_duration }}</p>
             </div>
+            <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-8 rounded-3xl font-black shadow-lg text-lg"><i class="fa-solid fa-house-user mr-2"></i>GİRİŞ YAP / GELDİM</a>
+            {% endif %}
+            <button onclick="alert('NFC Okunuyor... Lütfen kartınızı dokundurun.')" class="mt-4 w-full text-xs font-black text-slate-400 border py-3 rounded-xl uppercase tracking-widest"><i class="fa-solid fa-rss mr-2"></i>NFC İLE OKUT</button>
+        </div>
 
-            <div class="lg:col-span-8 space-y-6">
-                
-                <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-white">
-                    <h3 class="text-sm font-black text-slate-900 mb-6 uppercase tracking-widest italic">Yeni Talep & İzin Formu</h3>
-                    <form action="/request" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="space-y-4">
-                            <select name="type" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 text-sm outline-none">
-                                <option value="İzin">İzin Talebi</option>
-                                <option value="Avans">Avans Talebi</option>
-                                <option value="Rapor">Sağlık Raporu</option>
-                                <option value="Devamsızlık">Devamsızlık Bildirimi</option>
-                            </select>
-                            <input type="date" name="date" class="w-full p-4 border rounded-2xl text-slate-500 font-bold text-sm bg-slate-50">
-                        </div>
-                        <div class="space-y-4 text-right">
-                            <textarea name="detail" placeholder="Lütfen detaylı açıklama yazınız..." required class="w-full p-4 border rounded-2xl outline-none h-[115px] text-sm font-bold bg-slate-50"></textarea>
-                            <input type="file" name="file" class="text-[10px] w-full">
-                            <button class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 uppercase tracking-widest active:scale-95 transition-all">TALEBİ GÖNDER</button>
-                        </div>
-                    </form>
+        <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden">
+            <div class="p-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest italic">Sohbet Panosu</div>
+            <div class="h-48 overflow-y-auto p-4 space-y-3 bg-slate-50">
+                {% for m in messages %}
+                <div class="text-sm {% if m.sender == current_user.username %}text-right{% endif %}">
+                    <span class="inline-block p-3 rounded-2xl {% if m.sender == current_user.username %}bg-indigo-600 text-white{% else %}bg-white shadow-sm border text-slate-700{% endif %}">
+                        <p class="text-[8px] font-black uppercase opacity-60">{{ m.sender }}</p>
+                        <p class="font-bold">{{ m.content }}</p>
+                    </span>
                 </div>
+                {% endfor %}
+            </div>
+            <form action="/send_msg" method="POST" class="p-3 border-t flex gap-2">
+                <input type="text" name="content" placeholder="Mesaj yaz..." class="flex-1 p-3 text-xs bg-slate-50 rounded-xl outline-none border focus:ring-1 focus:ring-indigo-500">
+                <button class="bg-indigo-600 text-white px-5 rounded-xl"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
 
-                <div class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
-                    <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
-                        <h3 class="font-black text-slate-600 uppercase text-xs tracking-widest">Son Hareketlerim</h3>
-                        <a href="/export/personal" class="text-indigo-600 font-black text-[10px] hover:underline">TÜMÜNÜ İNDİR (EXCEL)</a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase font-black">
-                                <tr>
-                                    <th class="p-5">Zaman</th>
-                                    <th class="p-5">İşlem Türü</th>
-                                    <th class="p-5">Detay / Açıklama</th>
-                                    <th class="p-5">Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-sm font-bold">
-                                {% for log in logs %}
-                                <tr class="border-b hover:bg-slate-50 transition-colors">
-                                    <td class="p-5 text-slate-400 text-xs">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
-                                    <td class="p-5 text-indigo-600 italic">{{ log.type }}</td>
-                                    <td class="p-5 text-slate-600">{{ log.detail }}</td>
-                                    <td class="p-5">
-                                        {% if log.status == 'Onaylandı' %}
-                                        <span class="text-emerald-500"><i class="fa-solid fa-circle-check"></i></span>
-                                        {% elif log.status == 'Beklemede' %}
-                                        <span class="text-orange-400"><i class="fa-solid fa-clock"></i></span>
-                                        {% else %}
-                                        <span class="text-slate-400"><i class="fa-solid fa-check-double"></i></span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden">
+            <div class="p-4 border-b font-black text-xs text-slate-400 uppercase italic">Son İşlemlerim</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase font-black"><th class="p-4">Zaman</th><th class="p-4">Tür</th><th class="p-4">Durum</th></thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="border-b">
+                            <td class="p-4 text-slate-400">{{ log.created_at.strftime('%H:%M') }}</td>
+                            <td class="p-4 font-black italic text-indigo-600">{{ log.type }}</td>
+                            <td class="p-4 font-bold text-slate-600">{{ log.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </main>
+    </div>
     {% endif %}
-
-    <script>
-        // Mobil cihazlar için sayfa yenileme efektleri ve NFC simülasyonu buraya eklenebilir.
-        console.log("PTS PRO Mobil v11 Hazır.");
-    </script>
 </body>
 </html>
