@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message as MailMessage
 from datetime import datetime
 import os
+import io
+import csv
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -25,7 +27,7 @@ if uri and uri.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- MAİL AYARLARI (RENDER ENVIRONMENT ÜZERİNDEN) ---
+# --- MAİL AYARLARI ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -65,6 +67,7 @@ class Activity(db.Model):
     file_path = db.Column(db.String(200), nullable=True)
     status = db.Column(db.String(20), default='Aktif')
     created_at = db.Column(db.DateTime, default=datetime.now)
+    end_at = db.Column(db.DateTime, nullable=True) # SÜRE TAKİBİ İÇİN EKLENDİ
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,6 +78,29 @@ class Message(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# --- EXCEL / CSV DIŞA AKTARIM ---
+@app.route('/admin/export')
+@login_required
+def export_data():
+    if current_user.role != 'admin': return redirect(url_for('index'))
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Personel', 'Islem Tipi', 'Detay', 'Durum', 'Baslangic', 'Bitis'])
+    
+    activities = Activity.query.all()
+    for a in activities:
+        writer.writerow([a.username, a.type, a.detail, a.status, a.created_at, a.end_at])
+        
+    requests_list = Request.query.all()
+    for r in requests_list:
+        writer.writerow([r.username, r.req_type, r.content, r.status, r.created_at, 'N/A'])
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=pts_rapor.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
 
 # --- ANA SAYFA ---
 @app.route('/')
@@ -132,8 +158,9 @@ def upload_report():
     if file and allowed_file(file.filename):
         filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M')}_{file.filename}")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        # SAĞLIK RAPORUNUN ONAYLANABİLMESİ İÇİN DURUMUNU 'Beklemede' YAPTIK
         db.session.add(Activity(username=current_user.username, type='Rapor', detail=request.form.get('report_detail'), file_path=filename, status='Beklemede'))
-        db.session.commit(); flash('Rapor yüklendi!', 'success')
+        db.session.commit(); flash('Rapor yüklendi ve onay bekliyor!', 'success')
     else: flash('Dosya seçilmedi veya geçersiz format!', 'danger')
     return redirect(url_for('index'))
 
@@ -145,7 +172,9 @@ def terminal(action):
         flash('Çıkış yapıldı.', 'warning')
     else:
         act = Activity.query.filter_by(username=current_user.username, status='Aktif', type='Terminal').first()
-        if act: act.status = 'Tamamlandı'
+        if act: 
+            act.status = 'Tamamlandı'
+            act.end_at = datetime.now() # DÖNÜŞ ZAMANI KAYDEDİLDİ
         flash('Giriş yapıldı.', 'success')
     db.session.commit(); return redirect(url_for('index'))
 
@@ -156,12 +185,25 @@ def send_msg():
     if c: db.session.add(Message(sender=current_user.username, content=c)); db.session.commit()
     return redirect(url_for('index'))
 
-# --- ADMİN PANELİ VE ONAY İŞLEMLERİ (Burayı düzelttik) ---
+# --- ADMİN PANELİ ---
 @app.route('/admin_panel')
 @login_required
 def admin_panel():
     if current_user.role != 'admin': return redirect(url_for('index'))
-    return render_template('admin.html', users=User.query.all(), logs=Activity.query.all(), reqs=Request.query.filter_by(status='Beklemede').all())
+    
+    # Süre hesaplama yardımcı fonksiyonu
+    def get_duration(start, end):
+        if not end: end = datetime.now()
+        diff = end - start
+        m, s = divmod(diff.seconds, 60)
+        h, m = divmod(m, 60)
+        return f"{h}s {m}dk"
+
+    return render_template('admin.html', 
+                           users=User.query.all(), 
+                           logs=Activity.query.order_by(Activity.created_at.desc()).all(), 
+                           reqs=Request.query.all(),
+                           get_duration=get_duration)
 
 @app.route('/admin/action/<target>/<int:id>/<status>')
 @login_required
