@@ -1,27 +1,27 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message as MailMessage
 from datetime import datetime
-import os, pandas as pd, io
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v2026')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_final_2026_key')
 
-# --- VERİTABANI BAĞLANTISI ---
-uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_v13.db')
+# --- VERİTABANI AYARI ---
+uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_v14.db')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- MAİL AYARLARI ---
+# --- MAİL AYARLARI (GMAIL) ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'rubycharoncar@gmail.com' # Burayı değiştir
-app.config['MAIL_PASSWORD'] = 'zgme nxhc zokw ngrv' # Google Uygulama Şifreni yaz
-app.config['MAIL_DEFAULT_SENDER'] = 'rubycharoncar@gmail.com'
+app.config['MAIL_USERNAME'] = 'rubycharoncar@gmail.com' # Değiştir!
+app.config['MAIL_PASSWORD'] = 'zgme nxhc zokw ngrv' # Uygulama Şifren!
+app.config['MAIL_DEFAULT_SENDER'] = 'SENIN_MAILIN@gmail.com'
 
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -56,13 +56,13 @@ class Activity(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- ANA SAYFA ---
+# --- ROTALAR ---
 @app.route('/')
 @login_required
 def index():
     my_logs = Activity.query.filter_by(username=current_user.username).order_by(Activity.created_at.desc()).all()
     outsiders = Activity.query.filter_by(status='Aktif', type='Terminal').all()
-    messages = Message.query.order_by(Message.created_at.desc()).limit(10).all()
+    messages = Message.query.order_by(Message.created_at.desc()).limit(15).all()
     active_status = Activity.query.filter_by(username=current_user.username, status='Aktif').first()
     out_duration = ""
     if active_status:
@@ -70,7 +70,6 @@ def index():
         out_duration = f"{int(diff.total_seconds() // 60)} dk"
     return render_template('index.html', logs=my_logs, outsiders=outsiders, active_status=active_status, out_duration=out_duration, messages=messages)
 
-# --- GİRİŞ / KAYIT ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -79,7 +78,7 @@ def login():
         if user:
             login_user(user)
             return redirect(url_for('index'))
-        flash('Hatalı giriş!', 'danger')
+        flash('Kullanıcı adı veya şifre hatalı!', 'danger')
     return render_template('index.html', login_page=True, auth_mode='login')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -96,9 +95,9 @@ def register():
             db.session.commit()
             flash('Kayıt başarılı! Giriş yapabilirsiniz.', 'success')
             return redirect(url_for('login'))
+        flash('Bu kullanıcı adı zaten alınmış.', 'warning')
     return render_template('index.html', login_page=True, auth_mode='register')
 
-# --- ŞİFRE SIFIRLAMA (MAİL) ---
 @app.route('/forgot_password', methods=['POST'])
 def forgot_password():
     target_email = request.form.get('email')
@@ -106,16 +105,15 @@ def forgot_password():
     if user:
         try:
             msg = MailMessage("PTS PRO - Şifre Hatırlatma", recipients=[target_email])
-            msg.body = f"Merhaba {user.full_name},\n\nSisteme giriş şifreniz: {user.password}\n\nGüvenliğiniz için giriş yaptıktan sonra şifrenizi değiştirmenizi öneririz."
+            msg.body = f"Merhaba {user.full_name},\n\nŞifreniz: {user.password}\n\nLütfen giriş yaptıktan sonra şifrenizi güncelleyin."
             mail.send(msg)
-            flash('Şifreniz e-posta adresinize gönderildi.', 'success')
-        except Exception as e:
-            flash('Mail gönderilemedi. Ayarları kontrol edin.', 'danger')
+            flash('Şifreniz mail adresinize gönderildi.', 'success')
+        except:
+            flash('Mail gönderim hatası!', 'danger')
     else:
-        flash('Bu e-posta adresi kayıtlı değil.', 'danger')
+        flash('Bu mail sistemde kayıtlı değil.', 'danger')
     return redirect(url_for('login'))
 
-# --- TERMİNAL (GİRİŞ-ÇIKIŞ) ---
 @app.route('/terminal/<action>')
 @login_required
 def terminal(action):
@@ -129,7 +127,6 @@ def terminal(action):
     db.session.commit()
     return redirect(url_for('index'))
 
-# --- SOHBET ---
 @app.route('/send_msg', methods=['POST'])
 @login_required
 def send_msg():
@@ -139,12 +136,10 @@ def send_msg():
         db.session.commit()
     return redirect(url_for('index'))
 
-# --- ADMİN PANELİ ---
 @app.route('/admin_panel')
 @login_required
 def admin_panel():
     if current_user.role != 'admin':
-        flash('Bu sayfa için yetkiniz yok!', 'danger')
         return redirect(url_for('index'))
     users = User.query.all()
     logs = Activity.query.order_by(Activity.created_at.desc()).all()
@@ -155,15 +150,17 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- BAŞLATMA ---
+# --- VERİTABANI BAŞLATICI ---
 with app.app_context():
+    # Sütun hatasını çözmek için veritabanını temizle ve kur
+    db.drop_all() 
     db.create_all()
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', password='123', role='admin', full_name='Sistem Yöneticisi', email='admin@test.com', tc_no='00000000000')
+        admin = User(username='admin', password='123', role='admin', 
+                     full_name='Sistem Yöneticisi', email='admin@test.com', tc_no='00000000000')
         db.session.add(admin)
         db.session.commit()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
