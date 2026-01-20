@@ -41,24 +41,44 @@
             {% endfor %}{% endif %}
         {% endwith %}
 
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="bg-indigo-100 w-10 h-10 rounded-2xl flex items-center justify-center text-indigo-600 text-lg shadow-inner"><i class="fa-solid fa-users"></i></div>
+                <div><p class="text-[8px] font-black text-slate-400 uppercase">Toplam Personel</p><p class="text-lg font-black text-indigo-950">{{ users|length }}</p></div>
+            </div>
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="bg-orange-100 w-10 h-10 rounded-2xl flex items-center justify-center text-orange-600 text-lg shadow-inner"><i class="fa-solid fa-person-walking"></i></div>
+                <div><p class="text-[8px] font-black text-slate-400 uppercase">Şu an Dışarıda</p><p class="text-lg font-black text-orange-600">{{ logs|selectattr('status', 'equalto', 'Aktif')|selectattr('type', 'equalto', 'Terminal')|list|length }}</p></div>
+            </div>
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="bg-amber-100 w-10 h-10 rounded-2xl flex items-center justify-center text-amber-600 text-lg shadow-inner"><i class="fa-solid fa-clock"></i></div>
+                <div><p class="text-[8px] font-black text-slate-400 uppercase">Bekleyen Talepler</p><p class="text-lg font-black text-amber-600">{{ reqs|selectattr('status', 'equalto', 'Beklemede')|list|length }}</p></div>
+            </div>
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="bg-emerald-100 w-10 h-10 rounded-2xl flex items-center justify-center text-emerald-600 text-lg shadow-inner"><i class="fa-solid fa-file-circle-check"></i></div>
+                <div><p class="text-[8px] font-black text-slate-400 uppercase">Bekleyen Raporlar</p><p class="text-lg font-black text-emerald-600">{{ logs|selectattr('status', 'equalto', 'Beklemede')|selectattr('type', 'equalto', 'Rapor')|list|length }}</p></div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-200">
             <div class="p-5 bg-slate-50 border-b flex items-center justify-between">
                 <span class="font-black text-[10px] uppercase text-slate-500 tracking-widest leading-none">Personel Yetki Yönetimi</span>
-                <span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-[8px] font-black uppercase">{{ users|length }} Kullanıcı</span>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for u in users %}
-                <div class="p-4 border border-slate-100 rounded-[1.5rem] flex justify-between items-center bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
-                    <div>
-                        <p class="text-xs font-black text-indigo-950 group-hover:text-indigo-600 transition-colors">{{ u.full_name }}</p>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                            <i class="fa-solid fa-circle text-[6px] {% if u.role == 'admin' %}text-indigo-500{% else %}text-slate-300{% endif %}"></i>
-                            Rol: {{ u.role }}
-                        </p>
+                <div class="p-4 border border-slate-100 rounded-[1.5rem] flex flex-col justify-between bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs font-black text-indigo-950 group-hover:text-indigo-600 transition-colors">{{ u.full_name }}</p>
+                            <p class="text-[8px] font-bold text-slate-400">{{ u.email }}</p>
+                        </div>
+                        <span class="text-[7px] font-black px-2 py-1 rounded-lg uppercase {% if u.role == 'admin' %}bg-indigo-100 text-indigo-600{% else %}bg-slate-200 text-slate-500{% endif %}">
+                            {{ u.role }}
+                        </span>
                     </div>
                     <div class="flex gap-1">
-                        <a href="/admin/set_role/{{ u.id }}/admin" class="text-[8px] bg-slate-900 text-white px-3 py-2 rounded-xl font-black hover:bg-indigo-600 transition-colors">YÖNETİCİ</a>
-                        <a href="/admin/set_role/{{ u.id }}/personel" class="text-[8px] bg-white border border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black hover:bg-slate-100 transition-colors">PERSONEL</a>
+                        <a href="/admin/set_role/{{ u.id }}/admin" class="flex-1 text-center text-[8px] bg-slate-900 text-white px-3 py-2 rounded-xl font-black hover:bg-indigo-600 transition-colors uppercase">YÖNETİCİ YAP</a>
+                        <a href="/admin/set_role/{{ u.id }}/personel" class="flex-1 text-center text-[8px] bg-white border border-slate-200 text-slate-500 px-3 py-2 rounded-xl font-black hover:bg-slate-100 transition-colors uppercase">PERSONEL YAP</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -78,7 +98,7 @@
                             <th class="p-5">Tür</th>
                             <th class="p-5">İçerik & Miktar</th>
                             <th class="p-5">Durum</th>
-                            <th class="p-5 text-center">Onay/Red</th>
+                            <th class="p-5 text-center">İşlem</th>
                         </tr>
                     </thead>
                     <tbody class="text-xs font-bold divide-y divide-slate-100">
@@ -88,7 +108,7 @@
                             <td class="p-5 uppercase text-indigo-600">{{ r.req_type }}</td>
                             <td class="p-5">
                                 <span class="text-slate-600">{{ r.content }}</span>
-                                {% if r.amount %}<span class="ml-2 text-indigo-600">({{ r.amount }})</span>{% endif %}
+                                {% if r.amount %}<span class="ml-2 text-indigo-600 font-black">({{ r.amount }}₺)</span>{% endif %}
                             </td>
                             <td class="p-5">
                                 <span class="px-3 py-1.5 rounded-full text-[9px] font-black uppercase shadow-sm
@@ -109,7 +129,7 @@
                                     </a>
                                 </div>
                                 {% else %}
-                                <span class="text-[9px] text-slate-300 font-black italic uppercase">Tamamlandı</span>
+                                <span class="text-[9px] text-slate-300 font-black italic uppercase">Bitti</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -119,67 +139,66 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-orange-200">
-            <div class="p-5 bg-orange-50 border-b flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-person-walking-arrow-right text-orange-600"></i>
-                    <span class="font-black text-[10px] uppercase text-orange-900 tracking-widest leading-none">Canlı Terminal (Dışarıda Olanlar)</span>
-                </div>
-                <span class="bg-orange-200 text-orange-700 px-3 py-1 rounded-full text-[8px] font-black uppercase italic">Gerçek Zamanlı</span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-slate-50/50">
-                {% for l in logs if l.type == 'Terminal' %}
-                <div class="border border-slate-200 rounded-[1.5rem] p-4 bg-white shadow-sm hover:border-orange-300 transition-all relative">
-                    {% if l.status == 'Aktif' %}
-                    <div class="absolute top-0 right-0 bg-orange-500 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl uppercase animate-pulse">DIŞARIDA</div>
-                    {% endif %}
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-800 uppercase">{{ l.username }}</span>
-                        <span class="text-[9px] font-bold text-slate-400">{{ l.created_at.strftime('%H:%M') }}</span>
-                    </div>
-                    <div class="py-2 px-4 bg-orange-50 border border-orange-100 rounded-xl text-[10px] font-black text-orange-900 flex justify-between items-center">
-                        <span class="opacity-60 uppercase">Dışarıda Süre:</span>
-                        <span class="text-orange-600">{{ get_duration(l.created_at, l.end_at) }}</span>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-orange-200">
+                <div class="p-5 bg-orange-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-person-walking-arrow-right text-orange-600"></i>
+                        <span class="font-black text-[10px] uppercase text-orange-900 tracking-widest leading-none">Canlı Terminal</span>
                     </div>
                 </div>
-                {% else %}
-                <p class="text-[10px] font-black text-slate-300 uppercase italic p-4">Şu an dışarıda olan kimse yok.</p>
-                {% endfor %}
+                <div class="p-6 space-y-4 bg-slate-50/50 min-h-[300px]">
+                    {% for l in logs if l.type == 'Terminal' %}
+                    <div class="border border-slate-200 rounded-[1.5rem] p-4 bg-white shadow-sm hover:border-orange-300 transition-all relative">
+                        {% if l.status == 'Aktif' %}
+                        <div class="absolute top-0 right-0 bg-orange-500 text-white text-[7px] font-black px-3 py-1 rounded-bl-xl uppercase animate-pulse">DIŞARIDA</div>
+                        {% endif %}
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-black text-slate-800 uppercase">{{ l.username }}</span>
+                            <span class="text-[8px] font-bold text-slate-400 italic">{{ l.created_at.strftime('%H:%M') }}</span>
+                        </div>
+                        <div class="py-2 px-4 bg-orange-50 border border-orange-100 rounded-xl text-[9px] font-black text-orange-900 flex justify-between items-center">
+                            <span class="opacity-60 uppercase">Süre:</span>
+                            <span class="text-orange-600">{{ get_duration(l.created_at, l.end_at) }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-[10px] font-black text-slate-300 uppercase italic py-10">Kayıt bulunamadı.</p>
+                    {% endfor %}
+                </div>
             </div>
-        </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-emerald-200">
-            <div class="p-5 bg-emerald-50 border-b flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-file-invoice text-emerald-600"></i>
-                    <span class="font-black text-[10px] uppercase text-emerald-900 tracking-widest leading-none">Yüklenen Rapor & Belgeler</span>
-                </div>
-                <span class="bg-emerald-200 text-emerald-700 px-3 py-1 rounded-full text-[8px] font-black uppercase">Arşiv</span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-slate-50/50">
-                {% for l in logs if l.type == 'Rapor' %}
-                <div class="border border-slate-200 rounded-[1.5rem] p-4 bg-white shadow-sm hover:border-emerald-300 transition-all">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] font-black text-emerald-700 uppercase">{{ l.username }}</span>
-                        <span class="text-[9px] font-bold text-slate-400">{{ l.created_at.strftime('%d.%m | %H:%M') }}</span>
-                    </div>
-                    <p class="text-[11px] font-bold text-slate-600 mb-3 italic">"{{ l.detail }}"</p>
-                    <div class="flex justify-between items-center">
-                         <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">BELGE YÜKLENDİ</span>
-                         <a href="/static/uploads/{{ l.file_path }}" target="_blank" class="text-[9px] font-black bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-200 uppercase flex items-center gap-1 hover:bg-emerald-700 transition-colors">
-                             <i class="fa-solid fa-eye text-[10px]"></i> İNCELE
-                         </a>
+            <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-emerald-200">
+                <div class="p-5 bg-emerald-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-file-invoice text-emerald-600"></i>
+                        <span class="font-black text-[10px] uppercase text-emerald-900 tracking-widest leading-none">Belgeler</span>
                     </div>
                 </div>
-                {% else %}
-                <p class="text-[10px] font-black text-slate-300 uppercase italic p-4">Henüz yüklenmiş bir belge bulunmuyor.</p>
-                {% endfor %}
+                <div class="p-6 space-y-4 bg-slate-50/50 min-h-[300px]">
+                    {% for l in logs if l.type == 'Rapor' %}
+                    <div class="border border-slate-200 rounded-[1.5rem] p-4 bg-white shadow-sm hover:border-emerald-300 transition-all">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-black text-emerald-700 uppercase">{{ l.username }}</span>
+                            <span class="text-[8px] font-bold text-slate-400 italic">{{ l.created_at.strftime('%d.%m | %H:%M') }}</span>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-600 mb-3 italic bg-slate-50 p-2 rounded-lg">"{{ l.detail }}"</p>
+                        <div class="flex justify-between items-center">
+                             <a href="/admin/action/activity/{{ l.id }}/Okundu" class="text-[8px] font-black text-slate-400 hover:text-indigo-600">OKUNDU İŞARETLE</a>
+                             <a href="/static/uploads/{{ l.file_path }}" target="_blank" class="text-[9px] font-black bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg shadow-emerald-200 uppercase flex items-center gap-2 hover:bg-emerald-700 transition-transform active:scale-95">
+                                 <i class="fa-solid fa-eye"></i> İNCELE
+                             </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-[10px] font-black text-slate-300 uppercase italic py-10">Kayıt bulunamadı.</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Bildirimleri 4 saniye sonra kapat
         window.onload = function() {
             setTimeout(() => {
                 document.querySelectorAll('.flash-msg').forEach(el => {
