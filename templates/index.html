@@ -10,6 +10,8 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn.active { border-bottom: 3px solid #4f46e5; color: #4f46e5; font-weight: 900; }
+        /* Flash mesajlarının yavaşça kaybolması için */
+        .flash-msg { transition: opacity 0.5s ease-out; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -19,8 +21,19 @@
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
             <div class="text-center mb-6">
                 <h1 class="text-4xl font-black text-indigo-600 tracking-tighter italic">PTS PRO</h1>
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">HOŞ GELDİNİZ</p>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">
+                    {% if auth_mode == 'login' %}HOŞ GELDİNİZ{% else %}YENİ ÜYELİK{% endif %}
+                </p>
             </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                <div class="mb-4 p-3 rounded-xl text-[10px] font-black uppercase text-center {% if category == 'success' %}bg-emerald-100 text-emerald-600{% else %}bg-rose-100 text-rose-600{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}{% endif %}
+            {% endwith %}
+
             <form action="{% if auth_mode == 'login' %}/login{% else %}/register{% endif %}" method="POST" class="space-y-3">
                 {% if auth_mode == 'register' %}
                 <input type="text" name="full_name" placeholder="Ad Soyad" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
@@ -48,6 +61,20 @@
         </div>
     </nav>
 
+    <div class="max-w-md mx-auto mt-4 px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div id="flash-{{ loop.index }}" class="flash-msg p-4 rounded-2xl mb-4 text-[10px] font-black uppercase text-center shadow-lg border-2 animate-bounce
+                {% if category == 'success' %}bg-emerald-500 text-white border-emerald-400
+                {% elif category == 'warning' %}bg-orange-500 text-white border-orange-400
+                {% else %}bg-rose-500 text-white border-rose-400{% endif %}">
+                <i class="fa-solid {% if category == 'success' %}fa-check-double{% elif category == 'warning' %}fa-door-open{% else %}fa-circle-exclamation{% endif %} mr-2"></i>
+                {{ message }}
+            </div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+    </div>
+
     <div class="max-w-md mx-auto bg-white border-b flex justify-around sticky top-[60px] z-40">
         <button onclick="openTab('main')" id="btn-main" class="tab-btn active flex-1 py-4 text-[10px] font-black uppercase tracking-widest">Panel</button>
         <button onclick="openTab('requests')" id="btn-requests" class="tab-btn flex-1 py-4 text-[10px] font-black uppercase tracking-widest">Taleplerim</button>
@@ -55,6 +82,7 @@
     </div>
 
     <main class="max-w-md mx-auto p-4 space-y-6 pb-24">
+        
         <div id="main" class="tab-content active space-y-6">
             <div class="bg-white p-4 rounded-3xl shadow-sm border">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-3 italic">Şu An Dışarıda Olanlar</h3>
@@ -89,8 +117,7 @@
                         const h = Math.floor(diff / 3600000);
                         const m = Math.floor((diff % 3600000) / 60000);
                         const s = Math.floor((diff % 60000) / 1000);
-                        document.getElementById('liveCounter').innerText = 
-                            (h<10?'0':'')+h + ":" + (m<10?'0':'')+m + ":" + (s<10?'0':'')+s;
+                        document.getElementById('liveCounter').innerText = (h<10?'0':'')+h + ":" + (m<10?'0':'')+m + ":" + (s<10?'0':'')+s;
                     }
                     setInterval(updateCounter, 1000); updateCounter();
                 </script>
@@ -103,7 +130,7 @@
                     <label class="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:bg-slate-50 transition-colors">
                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 mb-2"></i>
                         <p class="text-[10px] font-black text-slate-400 uppercase">Resim (PNG/JPG) Seçin</p>
-                        <input type="file" name="report_file" accept="image/*" class="hidden" required>
+                        <input type="file" name="report_file" accept="image/*" class="hidden" required onchange="this.parentElement.querySelector('p').innerText = this.files[0].name">
                     </label>
                     <input type="text" name="report_detail" placeholder="Rapor Konusu (Örn: Sağlık)" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
                     <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-lg">YÜKLEMEYİ TAMAMLA</button>
@@ -166,19 +193,49 @@
     {% endif %}
 
     <script>
+        // Sekme Değiştirme ve URL Hafızası
         function openTab(tabId) {
+            // Aktif sınıfları temizle
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            document.getElementById('btn-' + tabId).classList.add('active');
+            
+            // Seçilen sekmeyi göster
+            const targetContent = document.getElementById(tabId);
+            const targetBtn = document.getElementById('btn-' + tabId);
+            
+            if (targetContent && targetBtn) {
+                targetContent.classList.add('active');
+                targetBtn.classList.add('active');
+            }
+
+            // URL'e anchor ekle (hafıza için)
+            if (!window.location.hash || window.location.hash !== '#' + tabId) {
+                history.replaceState(null, null, '#' + tabId);
+            }
+
+            // Sohbet kutusunu aşağı kaydır
             if(tabId === 'chat') {
                 const cb = document.getElementById('chatBox');
                 if(cb) cb.scrollTop = cb.scrollHeight;
             }
         }
+
         window.onload = function() {
-            const cb = document.getElementById('chatBox');
-            if(cb) cb.scrollTop = cb.scrollHeight;
+            // 1. Sekme Hafızası Kontrolü (URL'deki # anchor'a bakar)
+            const hash = window.location.hash.replace('#', '');
+            if (hash === 'requests' || hash === 'chat' || hash === 'main') {
+                openTab(hash);
+            } else {
+                openTab('main'); // Varsayılan
+            }
+
+            // 2. Flash Mesajları 4 Saniye Sonra Gizle
+            setTimeout(() => {
+                document.querySelectorAll('.flash-msg').forEach(el => {
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 500);
+                });
+            }, 4000);
         };
     </script>
 </body>
