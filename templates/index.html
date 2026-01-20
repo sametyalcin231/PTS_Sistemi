@@ -64,7 +64,7 @@
     <nav class="bg-white border-b sticky top-0 z-50 p-4 px-6 flex justify-between items-center shadow-sm">
         <span class="font-black text-xl text-indigo-600 italic underline decoration-indigo-200">PTS.PRO</span>
         <div class="flex items-center gap-4">
-            {% if current_user.role == 'admin' %}<a href="/admin_panel" class="text-[9px] bg-black text-white px-3 py-1.5 rounded-full font-black tracking-widest">ADMİN</a>{% endif %}
+            {% if current_user.role == 'admin' %}<a href="/admin_panel" class="text-[9px] bg-black text-white px-3 py-1.5 rounded-full font-black tracking-widest uppercase">ADMİN</a>{% endif %}
             <a href="/logout" class="text-rose-500 text-lg"><i class="fa-solid fa-power-off"></i></a>
         </div>
     </nav>
@@ -86,6 +86,7 @@
     </div>
 
     <main class="max-w-md mx-auto p-4 space-y-6 pb-24">
+        
         <div id="main" class="tab-content active space-y-6">
             <div class="bg-white p-4 rounded-3xl shadow-sm border">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-3 italic">Şu An Dışarıda Olanlar</h3>
@@ -105,22 +106,22 @@
 
             <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-indigo-50 text-center">
                 {% if not active_status %}
-                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-orange-200">DIŞARI ÇIKIYORUM</a>
+                <a href="/terminal/out" class="block w-full bg-orange-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-orange-200 uppercase">DIŞARI ÇIKIYORUM</a>
                 {% else %}
-                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-emerald-200">GELDİM / GİRİŞ</a>
+                <a href="/terminal/in" class="block w-full bg-emerald-500 text-white py-10 rounded-3xl font-black text-xl shadow-lg shadow-emerald-200 uppercase">GELDİM / GİRİŞ</a>
                 {% endif %}
             </div>
 
             <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border">
                 <h3 class="text-[10px] font-black text-indigo-600 uppercase mb-4 italic">Rapor & Belge Yükle</h3>
                 <form action="/upload_report" method="POST" enctype="multipart/form-data" class="space-y-3">
-                    <label class="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:bg-slate-50">
+                    <label class="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:bg-slate-50 transition-colors">
                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 mb-2"></i>
                         <p class="text-[10px] font-black text-slate-400 uppercase">Resim (PNG/JPG) Seçin</p>
-                        <input type="file" name="report_file" accept="image/*" class="hidden">
+                        <input type="file" name="report_file" accept="image/*" class="hidden" required>
                     </label>
                     <input type="text" name="report_detail" placeholder="Rapor Konusu (Örn: Sağlık)" required class="w-full p-4 border rounded-2xl bg-slate-50 font-bold text-xs outline-none">
-                    <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs">YÜKLEMEYİ TAMAMLA</button>
+                    <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-lg">YÜKLEMEYİ TAMAMLA</button>
                 </form>
             </div>
         </div>
@@ -129,25 +130,31 @@
             <div class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-200">
                 <h3 class="text-[10px] font-black uppercase mb-4 opacity-70 italic tracking-widest">Yeni Talep Oluştur</h3>
                 <form action="/submit_request" method="POST" class="space-y-3">
-                    <select name="req_type" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900">
+                    <select name="req_type" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900 shadow-inner">
                         <option value="İzin">İzin Talebi</option>
                         <option value="Avans">Avans Talebi</option>
                     </select>
-                    <input type="text" name="amount" placeholder="Miktar (Avans ise)" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900">
-                    <textarea name="content" placeholder="Açıklama veya Tarihler" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900 h-20"></textarea>
-                    <button class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black uppercase text-xs">YÖNETİME GÖNDER</button>
+                    <input type="text" name="amount" placeholder="Miktar (Avans ise)" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900 shadow-inner">
+                    <textarea name="content" placeholder="Açıklama veya Tarihler" class="w-full p-4 rounded-2xl font-bold text-xs outline-none text-slate-900 h-20 shadow-inner" required></textarea>
+                    <button class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black uppercase text-xs shadow-lg">YÖNETİME GÖNDER</button>
                 </form>
             </div>
 
             <div class="space-y-3">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase italic px-4">Taleplerimin Durumu</h3>
                 {% for r in requests %}
-                <div class="bg-white p-4 rounded-3xl shadow-sm border flex justify-between items-center">
-                    <div>
+                <div class="bg-white p-4 rounded-3xl shadow-sm border flex justify-between items-center transition-all hover:scale-[1.02]">
+                    <div class="flex-1">
                         <p class="text-[10px] font-black uppercase text-indigo-600">{{ r.req_type }}</p>
-                        <p class="text-[11px] font-bold text-slate-500">{{ r.content[:30] }}...</p>
+                        <p class="text-[11px] font-bold text-slate-500 truncate pr-4">{{ r.content }}</p>
                     </div>
-                    <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase {% if r.status == 'Beklemede' %}bg-orange-100 text-orange-600{% else %}bg-emerald-100 text-emerald-600{% endif %}">{{ r.status }}</span>
+                    <span class="text-[9px] font-black px-3 py-1.5 rounded-full uppercase 
+                        {% if r.status == 'Beklemede' %}bg-orange-100 text-orange-600
+                        {% elif r.status == 'Onaylandı' %}bg-emerald-100 text-emerald-600
+                        {% elif r.status == 'Reddedildi' %}bg-rose-100 text-rose-600
+                        {% else %}bg-slate-100 text-slate-600{% endif %} shadow-sm">
+                        {{ r.status }}
+                    </span>
                 </div>
                 {% endfor %}
             </div>
@@ -158,16 +165,16 @@
                 <div id="chatBox" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
                     {% for m in messages %}
                     <div class="flex flex-col {% if m.sender == current_user.username %}items-end{% endif %}">
-                        <span class="text-[8px] font-black text-slate-400 uppercase mb-1">{{ m.sender }}</span>
-                        <div class="p-3 rounded-2xl text-xs font-bold {% if m.sender == current_user.username %}bg-indigo-600 text-white{% else %}bg-white border text-slate-700 shadow-sm{% endif %}">
+                        <span class="text-[8px] font-black text-slate-400 uppercase mb-1 px-2">{{ m.sender }}</span>
+                        <div class="max-w-[80%] p-3 rounded-2xl text-xs font-bold {% if m.sender == current_user.username %}bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-100{% else %}bg-white border text-slate-700 rounded-tl-none shadow-sm{% endif %}">
                             {{ m.content }}
                         </div>
                     </div>
                     {% endfor %}
                 </div>
-                <form action="/send_msg" method="POST" class="p-4 bg-white border-t flex gap-2">
-                    <input type="text" name="content" placeholder="Mesaj..." class="flex-1 p-4 border rounded-2xl text-xs font-bold outline-none bg-slate-50">
-                    <button class="bg-indigo-600 text-white px-6 rounded-2xl shadow-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                <form action="/send_msg" method="POST" class="p-4 bg-white border-t flex gap-2 sticky bottom-0">
+                    <input type="text" name="content" placeholder="Mesaj..." class="flex-1 p-4 border rounded-2xl text-xs font-bold outline-none bg-slate-50 focus:bg-white focus:border-indigo-300 transition-all" required>
+                    <button class="bg-indigo-600 text-white px-6 rounded-2xl shadow-lg hover:bg-indigo-700 transition-colors"><i class="fa-solid fa-paper-plane"></i></button>
                 </form>
             </div>
         </div>
@@ -175,14 +182,25 @@
     {% endif %}
 
     <script>
+        // Sekme Değiştirme Fonksiyonu
         function openTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             document.getElementById('btn-' + tabId).classList.add('active');
+            
+            // Sohbet sekmesi açıldığında en alta kaydır
+            if(tabId === 'chat') {
+                const cb = document.getElementById('chatBox');
+                if(cb) cb.scrollTop = cb.scrollHeight;
+            }
         }
-        const cb = document.getElementById('chatBox');
-        if(cb) cb.scrollTop = cb.scrollHeight;
+        
+        // İlk yüklemede sohbeti en alta kaydır
+        window.onload = function() {
+            const cb = document.getElementById('chatBox');
+            if(cb) cb.scrollTop = cb.scrollHeight;
+        };
     </script>
 </body>
 </html>
