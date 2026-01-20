@@ -19,9 +19,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'SENIN_MAILIN@gmail.com' # Burayı değiştir
-app.config['MAIL_PASSWORD'] = 'abcd efgh ijkl mnop' # Google Uygulama Şifreni yaz
-app.config['MAIL_DEFAULT_SENDER'] = 'SENIN_MAILIN@gmail.com'
+app.config['MAIL_USERNAME'] = 'rubycharoncar@gmail.com' # Burayı değiştir
+app.config['MAIL_PASSWORD'] = 'zgme nxhc zokw ngrv' # Google Uygulama Şifreni yaz
+app.config['MAIL_DEFAULT_SENDER'] = 'rubycharoncar@gmail.com'
 
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -166,3 +166,4 @@ with app.app_context():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
