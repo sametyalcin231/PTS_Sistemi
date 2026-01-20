@@ -67,7 +67,7 @@ class Activity(db.Model):
     file_path = db.Column(db.String(200), nullable=True)
     status = db.Column(db.String(20), default='Aktif')
     created_at = db.Column(db.DateTime, default=datetime.now)
-    end_at = db.Column(db.DateTime, nullable=True) # SÜRE TAKİBİ İÇİN EKLENDİ
+    end_at = db.Column(db.DateTime, nullable=True) # Yeni sütun
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -84,19 +84,12 @@ def load_user(user_id):
 @login_required
 def export_data():
     if current_user.role != 'admin': return redirect(url_for('index'))
-    
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Personel', 'Islem Tipi', 'Detay', 'Durum', 'Baslangic', 'Bitis'])
-    
     activities = Activity.query.all()
     for a in activities:
         writer.writerow([a.username, a.type, a.detail, a.status, a.created_at, a.end_at])
-        
-    requests_list = Request.query.all()
-    for r in requests_list:
-        writer.writerow([r.username, r.req_type, r.content, r.status, r.created_at, 'N/A'])
-
     response = make_response(output.getvalue())
     response.headers["Content-Disposition"] = "attachment; filename=pts_rapor.csv"
     response.headers["Content-type"] = "text/csv"
@@ -158,9 +151,8 @@ def upload_report():
     if file and allowed_file(file.filename):
         filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M')}_{file.filename}")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        # SAĞLIK RAPORUNUN ONAYLANABİLMESİ İÇİN DURUMUNU 'Beklemede' YAPTIK
         db.session.add(Activity(username=current_user.username, type='Rapor', detail=request.form.get('report_detail'), file_path=filename, status='Beklemede'))
-        db.session.commit(); flash('Rapor yüklendi ve onay bekliyor!', 'success')
+        db.session.commit(); flash('Rapor yüklendi!', 'success')
     else: flash('Dosya seçilmedi veya geçersiz format!', 'danger')
     return redirect(url_for('index'))
 
@@ -174,7 +166,7 @@ def terminal(action):
         act = Activity.query.filter_by(username=current_user.username, status='Aktif', type='Terminal').first()
         if act: 
             act.status = 'Tamamlandı'
-            act.end_at = datetime.now() # DÖNÜŞ ZAMANI KAYDEDİLDİ
+            act.end_at = datetime.now()
         flash('Giriş yapıldı.', 'success')
     db.session.commit(); return redirect(url_for('index'))
 
@@ -190,20 +182,13 @@ def send_msg():
 @login_required
 def admin_panel():
     if current_user.role != 'admin': return redirect(url_for('index'))
-    
-    # Süre hesaplama yardımcı fonksiyonu
     def get_duration(start, end):
         if not end: end = datetime.now()
         diff = end - start
         m, s = divmod(diff.seconds, 60)
         h, m = divmod(m, 60)
         return f"{h}s {m}dk"
-
-    return render_template('admin.html', 
-                           users=User.query.all(), 
-                           logs=Activity.query.order_by(Activity.created_at.desc()).all(), 
-                           reqs=Request.query.all(),
-                           get_duration=get_duration)
+    return render_template('admin.html', users=User.query.all(), logs=Activity.query.order_by(Activity.created_at.desc()).all(), reqs=Request.query.filter_by(status='Beklemede').all(), get_duration=get_duration)
 
 @app.route('/admin/action/<target>/<int:id>/<status>')
 @login_required
@@ -220,7 +205,10 @@ def admin_action(target, id, status):
 @app.route('/logout')
 def logout(): logout_user(); return redirect(url_for('login'))
 
+# --- VERİTABANI BAŞLATMA VE SIFIRLAMA ---
 with app.app_context():
+    # Sütun hatasını çözmek için veritabanını sıfırlıyoruz
+    db.drop_all() 
     db.create_all()
     if not User.query.filter_by(username='admin').first():
         db.session.add(User(username='admin', password='123', role='admin', full_name='Admin', email='admin@test.com'))
