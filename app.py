@@ -15,18 +15,19 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pts_ultra_v5_final')
 # --- ŞİFRE SIFIRLAMA NESNESİ (Hata Alınan Kısım Düzeltildi) ---
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# --- MAİL AYARLARI (Bağlantı Sorunları İçin Optimize Edildi) ---
+# --- ŞİFRE SIFIRLAMA VE MAİL AYARLARI (GÜNCEL & KARARLI) ---
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=465,
     MAIL_USE_TLS=False,
     MAIL_USE_SSL=True,
     MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
-    MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
+    MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'), # Render panelindeki 16 haneli kod
     MAIL_DEFAULT_SENDER=os.environ.get('MAIL_USERNAME'),
     MAIL_ASCII_ATTACHMENTS=False
 )
-app.config['MAIL_TIMEOUT'] = 30 
+# Render'ın kilitlenmemesi için bağlantı bekleme süresini kısıtla
+app.config['MAIL_TIMEOUT'] = 5 
 mail = Mail(app)
 
 # --- DOSYA YÜKLEME AYARLARI ---
@@ -288,4 +289,5 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+
 
