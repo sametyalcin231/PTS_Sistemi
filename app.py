@@ -34,12 +34,19 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- VERİTABANI AYARLARI ---
+# --- VERİTABANI AYARLARI (KRİTİK DÜZELTME) ---
 uri = os.environ.get('DATABASE_URL', 'sqlite:///pts_final_v5.db')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Render PostgreSQL SSL ve Bağlantı Kopma Hataları İçin Ayarlar
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -139,10 +146,11 @@ def reset_password(token):
     
     if request.method == 'POST':
         user = User.query.filter_by(email=email).first()
-        user.password = request.form.get('password')
-        db.session.commit()
-        flash('Şifreniz güncellendi! Giriş yapabilirsiniz.', 'success')
-        return redirect(url_for('login'))
+        if user:
+            user.password = request.form.get('password')
+            db.session.commit()
+            flash('Şifreniz güncellendi! Giriş yapabilirsiniz.', 'success')
+            return redirect(url_for('login'))
     return render_template('index.html', login_page=True, auth_mode='reset', token=token)
 
 # --- DİĞER FONKSİYONLAR ---
@@ -154,7 +162,11 @@ def register():
         if User.query.filter_by(username=u).first(): 
             flash('Bu kullanıcı adı zaten alınmış!', 'danger')
             return redirect(url_for('register'))
-        new_user = User(username=u, password=request.form.get('password'), full_name=request.form.get('full_name'), tc_no=request.form.get('tc_no'), email=request.form.get('email'))
+        new_user = User(username=u, 
+                        password=request.form.get('password'), 
+                        full_name=request.form.get('full_name'), 
+                        tc_no=request.form.get('tc_no'), 
+                        email=request.form.get('email'))
         db.session.add(new_user)
         db.session.commit()
         flash('Kayıt başarılı! Giriş yapabilirsiniz.', 'success')
@@ -191,6 +203,7 @@ def upload_report():
     if file and allowed_file(file.filename):
         filename = secure_filename(f"{current_user.username}_{datetime.now().strftime('%Y%m%d%H%M')}_{file.filename}")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        # Raporlar ilk yüklendiğinde 'Beklemede' durumunda olur
         db.session.add(Activity(username=current_user.username, type='Rapor', detail=request.form.get('report_detail'), file_path=filename, status='Beklemede'))
         db.session.commit()
         flash('Rapor/Belge başarıyla yüklendi!', 'success')
@@ -232,6 +245,7 @@ def set_role(uid, role):
 @login_required
 def admin_action(target, id, status):
     if current_user.role != 'admin': return redirect(url_for('index'))
+    # Hem talepleri hem raporları onaylamaya yarayan ortak fonksiyon
     item = Request.query.get(id) if target == 'request' else Activity.query.get(id)
     if item: 
         item.status = status
